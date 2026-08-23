@@ -1,96 +1,58 @@
-# Prompt Orchestrator
+# PromptOps
 
-A 100% free, multi-tenant SaaS that turns rough user ideas into polished,
-model-aware prompts. Built on **Next.js + Supabase + Ollama + Vercel** —
-zero hosting, database, and AI fees.
+## Product Authority
 
-## Features
+| | |
+|---|---|
+| **Primary User** | Builders shipping AI features (this portfolio first) |
+| **Job To Be Done** | Manage prompts as governed, versioned, testable release artifacts |
+| **System of Record** | Prompt · Version · Model config · Template · Release · Rollback |
+| **System of Intelligence** | Model comparison, cost/latency insight, improvement suggestions |
+| **Explicit Non-Goals** | Evaluation verdicts (→ AI Assurance Lab / 44) · agent runtime (→ Agentic OS Enterprise) · being a feature inside Maktab |
 
-- Raw prompt intake with intent detection
-- Rule + LLM gap analysis → clarification questions
-- Multi-step Q&A session state
-- Final prompt reconstruction with rationale
-- Model-specific formatting for ChatGPT, Claude, Copilot, generic
-- Prompt history + versioning
-- Multi-tenant orgs with Postgres Row-Level Security
-- Chrome (Manifest V3) browser extension that injects into ChatGPT, Claude,
-  Copilot, and Gemini
+> Prompt Lifecycle & Model Optimization Platform — not "make my prompt better".
 
-## Folder structure
+The lifecycle this platform owns:
 
 ```
-.
-├── extension/                  Chrome MV3 extension
-│   ├── manifest.json
-│   ├── background.js           service worker
-│   ├── content.js / content.css inject Enhance button
-│   ├── popup.html / popup.js / popup.css
-│   └── options.html / options.js
-├── supabase/
-│   ├── migrations/0001_init.sql full schema + RLS
-│   └── seed.sql                public templates
-├── src/
-│   ├── app/                    Next.js App Router
-│   │   ├── layout.tsx, page.tsx, globals.css
-│   │   ├── login/page.tsx
-│   │   ├── workspace/page.tsx
-│   │   ├── templates/page.tsx
-│   │   ├── history/page.tsx
-│   │   └── api/
-│   │       ├── health/
-│   │       ├── orgs/
-│   │       ├── templates/[id]/
-│   │       ├── sessions/[id]/answers/
-│   │       ├── sessions/[id]/finalize/
-│   │       └── extension/enhance/
-│   ├── components/
-│   │   └── Workspace.tsx
-│   └── lib/
-│       ├── env.ts, types.ts
-│       ├── supabase/{server,browser}.ts
-│       ├── llm/{ollama,prompts}.ts
-│       └── services/{orchestration,clarification,template,formatter,auth}.ts
-├── package.json, tsconfig.json, next.config.mjs
-├── tailwind.config.ts, postcss.config.mjs
-└── docs/
-    ├── API.md
-    └── DEPLOY.md
+Draft → Test → Compare Models → Evaluate (via AI Assurance Lab)
+      → Approve → Version → Deploy → Monitor → Improve
 ```
 
-## Quick start
+A candidate never reaches production on its own:
 
-```bash
-# 1. Install
-npm install
-
-# 2. Configure
-cp .env.example .env.local
-# Fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
-# SUPABASE_SERVICE_ROLE_KEY, and OLLAMA_BASE_URL.
-
-# 3. Run Ollama (in another terminal)
-ollama pull llama3
-ollama pull mistral
-ollama pull phi3
-ollama serve
-
-# 4. Apply Supabase schema
-#   psql "$SUPABASE_DB_URL" -f supabase/migrations/0001_init.sql
-# (or paste it into the Supabase SQL editor)
-
-# 5. Start the app
-npm run dev
-# open http://localhost:3000
+```
+PromptOps ── candidate prompt v17 ──► AI Assurance Lab
+                                        ├── PASS ──► production
+                                        └── FAIL ──► back to PromptOps
 ```
 
-## Browser extension
+## What already works (inherited codebase)
 
-```bash
-# Chrome → chrome://extensions → Developer mode → "Load unpacked"
-# select the ./extension folder.
-# Then open the extension Options page and set:
-#   API base URL = your Vercel/localhost URL
-#   API key      = the EXTENSION_API_KEY value from .env.local
-```
+This repository carries the full history of the Prompt Orchestrator
+lineage — Next.js + Supabase + Ollama, multi-tenancy, clarification
+Q&A, prompt versioning, model-specific formatting, and companion
+clients:
 
-See [docs/API.md](docs/API.md) and [docs/DEPLOY.md](docs/DEPLOY.md).
+| Path | Client |
+| --- | --- |
+| `src/` | Web app (intake → gap analysis → Q&A → reconstruction) |
+| `extension/` | Browser extension (MV3) — polish prompts inside ChatGPT/Claude/Copilot/Gemini |
+| `desktop/` | Electron shell |
+| `mobile/` | Capacitor scaffold |
+| `docs/AUDIT_MASTER_PROMPT.md` | Audit discipline: no 100% claims without evidence; compile is not a passing user journey |
+
+## Roadmap (P0 → P2)
+
+- **P0 · Identity + lifecycle skeleton** — rebrand surfaces to PromptOps;
+  wire the Draft→…→Improve stages as first-class states on a prompt.
+- **P1 · Platform** — benchmark datasets · A/B tests · cost/latency
+  comparison · model adapters · prompt registry · release stages ·
+  rollback · API/SDK · extension sync.
+- **P2 · Portfolio integration** — production prompts of every portfolio
+  product managed here, routed through the AI Gateway, evaluated by the
+  Assurance Lab.
+
+## KPIs
+
+`prompt success rate` · `cost` · `latency` · `regression rate`
