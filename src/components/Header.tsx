@@ -5,7 +5,6 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import Logo from "@/components/Logo";
 import Wordmark from "@/components/Wordmark";
 import ThemeToggle from "@/components/ThemeToggle";
-import ShareApp from "@/components/ShareApp";
 import Link from "next/link";
 
 export default function Header() {
@@ -23,14 +22,11 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 text-sm">
-          <a href="/workspace" className="btn-ghost">{t("nav.workspace")}</a>
+          <a href="/studio" className="btn-ghost">{t("nav.workspace")}</a>
           <a href="/templates" className="btn-ghost">{t("nav.templates")}</a>
-          <a href="/learn" className="btn-ghost">{t("nav.learn")}</a>
           <a href="/history" className="btn-ghost">{t("nav.history")}</a>
-          <a href="/settings" className="btn-ghost">{t("nav.settings")}</a>
           <a href="/login" className="btn-ghost">{t("nav.signin")}</a>
           <span className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
-          <ShareApp />
           <ThemeToggle />
           <button
             onClick={() => setLocale(otherLocale)}
@@ -70,14 +66,11 @@ export default function Header() {
       {open && (
         <nav className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95">
           <div className="max-w-7xl mx-auto px-4 py-2 flex flex-col">
-            <a href="/workspace" className="btn-ghost justify-start">{t("nav.workspace")}</a>
+            <a href="/studio" className="btn-ghost justify-start">{t("nav.workspace")}</a>
             <a href="/templates" className="btn-ghost justify-start">{t("nav.templates")}</a>
-            <a href="/learn" className="btn-ghost justify-start">{t("nav.learn")}</a>
             <a href="/history" className="btn-ghost justify-start">{t("nav.history")}</a>
-            <a href="/settings" className="btn-ghost justify-start">{t("nav.settings")}</a>
             <a href="/login" className="btn-ghost justify-start">{t("nav.signin")}</a>
             <div className="mt-1 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <ShareApp />
             </div>
           </div>
         </nav>

@@ -22,7 +22,7 @@
     return "generic";
   })();
 
-  const DEFAULT_BASE = "https://desktop-tutorial-kappa-five.vercel.app";
+  const DEFAULT_BASE = "https://promptops-kappa.vercel.app";
 
   let cachedBase = DEFAULT_BASE;
   let liveOn = true;          // user-toggleable

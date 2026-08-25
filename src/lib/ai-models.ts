@@ -364,3 +364,41 @@ export const CATEGORY_LABELS: Record<ModelCategory, { en: string; ar: string; em
   video: { en: "Video",            ar: "فيديو",             emoji: "🎬" },
   audio: { en: "Audio & voice",    ar: "صوت وموسيقى",       emoji: "🎙" }
 };
+
+/**
+ * Narrow a catalogue model to the `target_model` the API accepts.
+ *
+ * The catalogue and the API contract disagree in size, deliberately: the
+ * catalogue carries ~30 prompt styles across text, code, image, video and
+ * audio, while `sessions.target_model` is an enum of five. Sending a raw
+ * catalogue id (`nano-banana`, `github-copilot`) to POST /api/sessions is
+ * rejected with a 400, so the picker's value has to be narrowed before it
+ * crosses that boundary.
+ *
+ * The mapping is by `promptStyle`, not by id, so a new model inherits the
+ * right target the moment it is added to the catalogue with an existing
+ * style — no second list to keep in sync.
+ *
+ * It is lossy on purpose. Everything outside the four families the formatter
+ * has real rules for falls back to "generic", which is a working prompt
+ * rather than one formatted for the wrong model. Widening the enum would mean
+ * teaching formatter.ts each new family first.
+ */
+export function toTargetModel(modelId: string): "chatgpt" | "claude" | "copilot" | "gemini" | "generic" {
+  const style = getModel(modelId)?.promptStyle;
+  switch (style) {
+    case "openai-system":
+      return "chatgpt";
+    case "claude-xml":
+      return "claude";
+    case "gemini-multimodal":
+    case "imagen-natural":
+    case "veo-natural":
+      return "gemini";
+    case "code-comments":
+    case "code-spec":
+      return "copilot";
+    default:
+      return "generic";
+  }
+}

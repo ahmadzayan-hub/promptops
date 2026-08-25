@@ -7,9 +7,9 @@ interface Props {
 }
 
 /**
- * Wordmark for the platform brand: **Maktab** / **مكتب**.
+ * Wordmark for the platform brand: **PromptOps** / **استوديو زيان**.
  * The word means "desk / study / office" in Arabic, and that's the promise:
- * one desk where every part of your MBA lives.
+ * the studio where a rough idea becomes a production prompt.
  *
  * Renders the form matching the active locale and keeps the other form as a
  * small subtitle so both audiences recognise the brand.
@@ -35,7 +35,7 @@ export default function Wordmark({ className }: Props) {
         {locale === "ar" ? ar : en}
       </span>
       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal truncate" aria-hidden="true">
-        {locale === "ar" ? "Maktab" : "مكتب · your MBA desk"}
+        {locale === "ar" ? "PromptOps" : "استوديو زيان"}
       </span>
     </span>
   );

@@ -1,4 +1,8 @@
-# PromptOps
+# PromptOps · ZAIan Studio
+
+> **ZAIan Studio is PromptOps.** One product, two names: PromptOps is the
+> platform, ZAIan Studio is the name its browser, desktop and mobile clients
+> ship under.
 
 ## Product Authority
 
@@ -27,25 +31,41 @@ PromptOps ── candidate prompt v17 ──► AI Assurance Lab
                                         └── FAIL ──► back to PromptOps
 ```
 
-## What already works (inherited codebase)
+## What is here
 
-This repository carries the full history of the Prompt Orchestrator
-lineage — Next.js + Supabase + Ollama, multi-tenancy, clarification
-Q&A, prompt versioning, model-specific formatting, and companion
-clients:
-
-| Path | Client |
+| Path | What it is |
 | --- | --- |
-| `src/` | Web app (intake → gap analysis → Q&A → reconstruction) |
+| `src/app/studio` | The pipeline on one screen: intent → gap analysis → clarifying questions → a versioned, model-formatted prompt |
+| `src/app/templates`, `src/app/history` | Reusable prompt skeletons; your 50 most recent sessions |
+| `src/app/api/sessions/*` | `POST` to start, `/answers` to reply, `/finalize` to build |
+| `src/app/api/extension/enhance` | The same pipeline for the clients, authenticated by API key |
+| `src/lib/services/*` | `orchestration` (intent), `clarification` (gaps + questions), `formatter` (per-model shaping), `template` |
+| `src/lib/ai-models.ts` | ~30 models with the prompt style each favours, and `toTargetModel()` narrowing them to the five the API accepts |
 | `extension/` | Browser extension (MV3) — polish prompts inside ChatGPT/Claude/Copilot/Gemini |
-| `desktop/` | Electron shell |
-| `mobile/` | Capacitor scaffold |
-| `docs/AUDIT_MASTER_PROMPT.md` | Audit discipline: no 100% claims without evidence; compile is not a passing user journey |
+| `desktop/` · `mobile/` | Electron shell · Capacitor scaffold |
+| `supabase/migrations/0001_init.sql` | organizations · templates · sessions · questions · answers · prompt_versions · api_keys |
+
+### A note on this repository's history
+
+Until 2026-08-25 this repo also contained a second, unrelated application —
+an MBA study platform — grafted on top of the PromptOps code: its own schema
+(`0003_tweenz_schema.sql`), its own routes, and the branding on every shared
+surface. The PromptOps backend was complete and tested underneath it, but no
+UI called it, and the clients in `desktop/`, `extension/` and `mobile/` all
+pointed at that other app's deployment.
+
+That graft has been removed and the UI those APIs were waiting for is built.
+Anything in the git history before that date will show the two products
+interleaved.
 
 ## Roadmap (P0 → P2)
 
-- **P0 · Identity + lifecycle skeleton** — rebrand surfaces to PromptOps;
-  wire the Draft→…→Improve stages as first-class states on a prompt.
+- ~~**P0 · Identity**~~ — **done.** Every surface is PromptOps: the app, the
+  manifest, the service worker, the sitemap, and the clients, which now point
+  at this deployment instead of another product's.
+- **P0b · Lifecycle states** — wire Draft→…→Improve as first-class states on a
+  prompt. `sessions.status` covers intake → clarifying → ready → finalized
+  today; approval, release and rollback are not modelled yet.
 - **P1 · Platform** — benchmark datasets · A/B tests · cost/latency
   comparison · model adapters · prompt registry · release stages ·
   rollback · API/SDK · extension sync.

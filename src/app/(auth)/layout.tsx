@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <FadeUp>
           <Link href="/" className="inline-flex items-center gap-2.5 text-white font-bold text-lg">
             <GraduationCap size={24} />
-            Maktab <span className="text-white/50 font-normal text-sm">· مكتب</span>
+            PromptOps <span className="text-white/50 font-normal text-sm">· استوديو زيان</span>
           </Link>
         </FadeUp>
       </div>
@@ -25,7 +25,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
       {/* Footer */}
       <div className="p-6 text-center text-xs text-white/40">
-        © {new Date().getFullYear()} Maktab · مكتب. Operated from UAE.
+        © {new Date().getFullYear()} PromptOps · ZAIan Studio. Operated from UAE.
         {" · "}
         <Link href="/privacy" className="hover:text-white/70 transition">Privacy</Link>
         {" · "}

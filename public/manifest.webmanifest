@@ -1,10 +1,10 @@
 {
-  "name": "Tweenz AI Learning OS",
-  "short_name": "Tweenz AI",
-  "description": "Your MBA study life, organized by AI. Bilingual AI academic platform.",
-  "start_url": "/dashboard",
+  "name": "PromptOps · ZAIan Studio",
+  "short_name": "PromptOps",
+  "description": "Turn a rough idea into a production prompt — formatted per model, versioned, and reusable.",
+  "start_url": "/studio",
   "display": "standalone",
-  "background_color": "#f0f4ff",
+  "background_color": "#f8fafc",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
   "lang": "en",
@@ -15,11 +15,10 @@
     { "src": "/icon.svg",     "sizes": "any",     "type": "image/svg+xml" }
   ],
   "screenshots": [],
-  "categories": ["education", "productivity"],
+  "categories": ["productivity", "developer"],
   "shortcuts": [
-    { "name": "Dashboard", "url": "/dashboard", "description": "Your academic dashboard" },
-    { "name": "AI Tutor", "url": "/tutor", "description": "Chat with your AI tutor" },
-    { "name": "Study Packs", "url": "/study-packs", "description": "Your AI study packs" },
-    { "name": "Ask My MBA", "url": "/ask-mba", "description": "Ask your MBA agent" }
+    { "name": "Studio", "url": "/studio", "description": "Build a prompt" },
+    { "name": "Templates", "url": "/templates", "description": "Reusable prompt skeletons" },
+    { "name": "History", "url": "/history", "description": "Your recent sessions" }
   ]
 }
