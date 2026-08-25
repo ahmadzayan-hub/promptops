@@ -19,13 +19,15 @@ export default function Wordmark({ className }: Props) {
 
   const en = (
     <span className="font-bold tracking-tight">
-      <span className="text-brand-600 dark:text-brand-300">Mak</span>
-      <span className="font-semibold text-slate-800 dark:text-slate-100">tab</span>
+      <span className="text-brand-600 dark:text-brand-300">Prompt</span>
+      <span className="font-semibold text-slate-800 dark:text-slate-100">Ops</span>
     </span>
   );
   const ar = (
     <span className="font-semibold tracking-tight">
-      مكتب
+      <span className="text-brand-600 dark:text-brand-300">استوديو</span>
+      {" "}
+      <span className="text-slate-800 dark:text-slate-100">زيان</span>
     </span>
   );
 
