@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /* ══════════════════════════════════════════════════════════════════
-   Maktab · مكتب · Interactive Design System
-   "Your MBA, on one desk." Bilingual EN/AR · UAE-rooted.
+   PromptOps · ZAIan Studio · Interactive Design System
+   "Ship prompts, not guesses." Bilingual EN/AR · UAE-rooted.
    ══════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -406,21 +406,6 @@ html.dark .header-glass {
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   @apply text-slate-800 dark:text-slate-100;
 }
-
-/* ── Flashcard 3D flip ──────────────────────────────────────────── */
-
-.flip-card { perspective: 1400px; }
-.flip-card-inner {
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-  position: relative;
-}
-.flip-card-inner.flipped { transform: rotateY(180deg); }
-.flip-card-front, .flip-card-back {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.flip-card-back { transform: rotateY(180deg); }
 
 /* ── Table ──────────────────────────────────────────────────────── */
 

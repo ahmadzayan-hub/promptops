@@ -1,12 +1,12 @@
-// Tweenz AI Learning OS — Service Worker
-const CACHE_NAME = "tweenz-v1";
+// PromptOps · ZAIan Studio — Service Worker
+const CACHE_NAME = "promptops-v1";
 const OFFLINE_URL = "/offline";
 
 // App shell resources to pre-cache
 const PRECACHE_URLS = [
   "/",
   "/offline",
-  "/dashboard",
+  "/studio",
   "/manifest.webmanifest",
 ];
 

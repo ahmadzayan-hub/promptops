@@ -1,36 +1,37 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import Header from "@/components/Header";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.tweenz.ae";
-const TITLE = "Maktab · مكتب · Your MBA on one desk | منصة طلاب الماجستير";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://promptops-kappa.vercel.app";
+const TITLE = "PromptOps · ZAIan Studio · Ship prompts, not guesses | استوديو زيان";
 const DESCRIPTION =
-  "Maktab brings every part of your MBA · courses, lectures, study packs, grades, deadlines, and an AI tutor that cites your own materials · onto one bilingual desk. Built in the UAE, for students worldwide. | مكتب يجمع كل ما تحتاجه في دراسة الماجستير: المقررات، المحاضرات، حزم الدراسة، الدرجات، والمواعيد، مع معلّم ذكي يستشهد من مواد مقرّرك · في مكتب واحد بلغتين.";
+  "PromptOps turns a rough idea into a production prompt: it detects intent, asks only the questions your prompt is missing, then formats the result for ChatGPT, Claude, Copilot or Gemini. Versioned, reusable, and available in your browser. | بروبت أوبس يحوّل فكرة خام إلى موجّه جاهز: يحدد النية، ويسأل فقط عمّا ينقص، ثم ينسّق النتيجة لكل نموذج."
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
-  title: { default: TITLE, template: "%s · Maktab" },
+  title: { default: TITLE, template: "%s · PromptOps" },
   description: DESCRIPTION,
-  applicationName: "Maktab",
+  applicationName: "PromptOps",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Maktab", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "PromptOps", statusBarStyle: "default" },
   icons: { icon: "/icon.svg", apple: "/apple-icon.png" },
-  authors: [{ name: "Maktab", url: APP_URL }],
+  authors: [{ name: "PromptOps", url: APP_URL }],
   keywords: [
-    "Maktab", "مكتب", "MBA study app", "AI tutor that cites your lectures",
-    "study packs", "Moodle companion", "bilingual education",
-    "Arabic learning platform", "UAE EdTech", "online MBA workspace",
-    "academic AI", "study flashcards", "grade tracker", "exam readiness",
-    "منصة تعليمية", "تعلم ذكي", "ماجستير", "طلاب الجامعة"
+    "PromptOps", "ZAIan Studio", "prompt engineering", "prompt templates",
+    "prompt versioning", "ChatGPT prompts", "Claude prompts", "Copilot prompts",
+    "Gemini prompts", "AI prompt builder", "bilingual prompt tool",
+    "هندسة الموجهات", "استوديو زيان", "موجهات الذكاء الاصطناعي"
   ],
+
   openGraph: {
     type: "website",
     title: TITLE,
     description: DESCRIPTION,
     url: APP_URL,
-    siteName: "Maktab",
+    siteName: "PromptOps",
     locale: "en_US",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Maktab · Your MBA on one desk" }]
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "PromptOps · Ship prompts, not guesses" }]
   },
   twitter: {
     card: "summary_large_image",
@@ -79,23 +80,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              name: "Maktab",
-              alternateName: ["مكتب", "Maktab · MBA Learning OS"],
+              name: "PromptOps",
+              alternateName: ["ZAIan Studio", "استوديو زيان"],
               description: DESCRIPTION,
               url: APP_URL,
-              applicationCategory: "EducationApplication",
+              applicationCategory: "DeveloperApplication",
               operatingSystem: "Any",
               countryOfOrigin: { "@type": "Country", name: "United Arab Emirates" },
-              offers: [
-                { "@type": "Offer", name: "Free Plan", price: "0", priceCurrency: "USD" },
-                { "@type": "Offer", name: "Student Plan", price: "12", priceCurrency: "USD" },
-              ],
               inLanguage: ["en", "ar"],
-              audience: { "@type": "Audience", audienceType: "MBA and university students" }
+              audience: { "@type": "Audience", audienceType: "Builders shipping AI features" }
             })
           }}
         />
         <I18nProvider>
+          <Header />
           {children}
         </I18nProvider>
         <script

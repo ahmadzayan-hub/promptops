@@ -3,15 +3,15 @@ interface LogoProps {
 }
 
 /**
- * Maktab brand mark: a stylised desk with a book and a focus dot ·
- * the "one desk where every piece of your MBA lives". Single SVG, no deps.
+ * PromptOps brand mark: a stylised desk with a book and a focus dot ·
+ * carried over from the platform's original mark. Single SVG, no deps.
  */
 export default function Logo({ className }: LogoProps) {
   return (
     <svg
       viewBox="0 0 512 512"
       role="img"
-      aria-label="Maktab · مكتب"
+      aria-label="PromptOps · ZAIan Studio"
       className={className}
     >
       <defs>

@@ -11,7 +11,7 @@ const path = require("path");
 
 const APP_URL = process.env.ZAIAN_STUDIO_URL ||
   process.env.PROMPTSZAIAN_URL || // legacy alias kept for backwards-compat
-  "https://desktop-tutorial-kappa-five.vercel.app";
+  "https://promptops-kappa.vercel.app";
 
 let mainWindow = null;
 

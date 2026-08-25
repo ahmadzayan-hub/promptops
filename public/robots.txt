@@ -1,28 +1,10 @@
 User-agent: *
 Allow: /
-Allow: /features
-Allow: /pricing
-Allow: /how-it-works
-Allow: /for-students
-Allow: /faq
-Allow: /contact
-Allow: /privacy
-Allow: /terms
 
-Disallow: /dashboard
-Disallow: /courses
-Disallow: /grades
-Disallow: /files
-Disallow: /announcements
-Disallow: /timeline
-Disallow: /tutor
-Disallow: /study-packs
-Disallow: /flashcards
-Disallow: /quizzes
-Disallow: /tasks
-Disallow: /weekly-brief
-Disallow: /ask-mba
-Disallow: /admin
+# Behind sign-in, nothing to index.
+Disallow: /studio
+Disallow: /templates
+Disallow: /history
 Disallow: /api/
 
-Sitemap: https://www.tweenz.ae/sitemap.xml
+Sitemap: https://promptops-kappa.vercel.app/sitemap.xml

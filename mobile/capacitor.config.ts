@@ -17,7 +17,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  *               npm run ios:open       (Xcode)
  */
 
-const PRODUCTION_URL = "https://desktop-tutorial-kappa-five.vercel.app";
+const PRODUCTION_URL = "https://promptops-kappa.vercel.app";
 
 const config: CapacitorConfig = {
   appId: "com.zaian.studio",

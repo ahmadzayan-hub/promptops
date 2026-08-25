@@ -4,8 +4,8 @@ export const RTL_LOCALES: Locale[] = ["ar"];
 
 export const dict = {
   en: {
-    "app.name": "Maktab",
-    "app.tagline": "Your MBA, on one desk.",
+    "app.name": "PromptOps",
+    "app.tagline": "Ship prompts, not guesses.",
     "app.description": "Maktab · your MBA on one bilingual desk. Courses, lectures, study packs, grades, deadlines, and an AI tutor that cites your own materials.",
     "app.domain": "www.tweenz.ae",
 

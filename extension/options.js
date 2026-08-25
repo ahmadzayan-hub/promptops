@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
   const cfg = await chrome.storage.sync.get([
     "apiBase", "apiKey", "live_suggestions", "locale"
   ]);
-  $("apiBase").value     = cfg.apiBase || "https://desktop-tutorial-kappa-five.vercel.app";
+  $("apiBase").value     = cfg.apiBase || "https://promptops-kappa.vercel.app";
   $("apiKey").value      = cfg.apiKey  || "";
   $("liveOn").checked    = cfg.live_suggestions !== false;
   $("locale").value      = cfg.locale  || "en";
