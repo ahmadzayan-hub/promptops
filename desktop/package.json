@@ -42,7 +42,18 @@
         "AppImage",
         "deb"
       ],
-      "category": "Office"
-    }
+      "category": "Office",
+      "maintainer": "PromptOps <noreply@promptops.app>"
+    },
+    "publish": null
+  },
+  "homepage": "https://promptops-kappa.vercel.app",
+  "author": {
+    "name": "PromptOps",
+    "email": "noreply@promptops.app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahmadzayan-hub/promptops.git"
   }
 }
