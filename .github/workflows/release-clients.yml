@@ -1,0 +1,94 @@
+name: Release clients
+
+# The desktop, extension and mobile clients each bake in a fallback URL. Until
+# 2026-08-25 all of them pointed at another product's deployment, and the only
+# way to correct an installed client is to ship a new build — so the repo needs
+# a way to produce one.
+#
+# Manual by default: releasing is a decision, not something a push should do.
+# Tagging client-v* runs it too, so a tag is a release.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, e.g. 0.15.0"
+        required: true
+  push:
+    tags: ["client-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Never cut a release whose clients point somewhere else. This is the
+      # whole reason the release exists, so it gates everything below.
+      - name: Client endpoints
+        run: node scripts/check-client-endpoints.mjs
+
+  extension:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # MV3 has no build step — the store wants the directory zipped as-is.
+      - name: Package
+        run: |
+          cd extension
+          zip -r ../zaian-studio-extension.zip . -x '*.DS_Store'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: zaian-studio-extension.zip
+
+  desktop:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS is omitted on purpose: a .dmg is only useful signed and
+        # notarised, which needs an Apple Developer certificate this workflow
+        # has no access to. Adding an unsigned mac target would produce a
+        # download that refuses to open.
+        include:
+          - os: ubuntu-latest
+            target: build:linux
+          - os: windows-latest
+            target: build:win
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Build
+        run: npm run ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.exe
+
+  publish:
+    needs: [extension, desktop]
+    if: startsWith(github.ref, 'refs/tags/client-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
