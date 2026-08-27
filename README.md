@@ -45,6 +45,28 @@ PromptOps ── candidate prompt v17 ──► AI Assurance Lab
 | `desktop/` · `mobile/` | Electron shell · Capacitor scaffold |
 | `supabase/migrations/0001_init.sql` | organizations · templates · sessions · questions · answers · prompt_versions · api_keys |
 
+## Releasing the clients
+
+The desktop, extension and mobile clients each bake in a fallback URL, so a
+correction to it only reaches people who install a new build. Until 2026-08-25
+all three pointed at another product's deployment.
+
+`.github/workflows/release-clients.yml` builds them. It is manual by default —
+releasing is a decision, not something a push should do — and also runs on a
+`client-v*` tag, which additionally publishes a GitHub Release.
+
+| Client | Built by CI | Notes |
+|---|---|---|
+| `extension/` | yes — zipped for the Chrome Web Store | MV3, no build step; the store still needs the upload done by hand |
+| `desktop/` | yes — AppImage, .deb, .exe | macOS is deliberately omitted: an unsigned `.dmg` refuses to open, and notarising needs an Apple Developer certificate this workflow has no access to |
+| `mobile/` | **no** | Capacitor with no committed native project. `npm run android:init` generates `android/` locally; until that is committed or generated in the workflow there is nothing to build |
+
+`scripts/check-client-endpoints.mjs` asserts every client defaults to this
+app's deployment and mentions no other product's host. CI runs it on every
+push, and the release workflow gates on it before building anything — a client
+pointing at the wrong host builds and runs perfectly, it just opens somebody
+else's app.
+
 ### A note on this repository's history
 
 Until 2026-08-25 this repo also contained a second, unrelated application —

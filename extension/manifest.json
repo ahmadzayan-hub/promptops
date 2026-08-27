@@ -2,9 +2,14 @@
   "manifest_version": 3,
   "name": "ZAIan Studio",
   "short_name": "ZAIan",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Polish any AI prompt for ChatGPT, Claude, Copilot, Gemini. Free, EN/AR. From the UAE 🇦🇪 to the world.",
-  "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
   "host_permissions": [
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
@@ -13,14 +18,20 @@
     "https://gemini.google.com/*",
     "https://*/*"
   ],
-  "background": { "service_worker": "background.js", "type": "module" },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_title": "ZAIan Studio",
     "default_popup": "popup.html"
   },
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Alt+P", "mac": "Alt+P" },
+      "suggested_key": {
+        "default": "Alt+P",
+        "mac": "Alt+P"
+      },
       "description": "Open ZAIan Studio suggestions"
     }
   },
@@ -37,12 +48,18 @@
         "https://copilot.microsoft.com/*",
         "https://gemini.google.com/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "icons": { "128": "icon.png" },
+  "icons": {
+    "128": "icon.png"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "zaian-studio@zaian.com",

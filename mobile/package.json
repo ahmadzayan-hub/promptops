@@ -1,21 +1,19 @@
 {
   "name": "zaian-studio-mobile",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": true,
   "description": "Native iOS + Android shells for ZAIan Studio · زيان ستوديو (Capacitor).",
   "scripts": {
-    "android:init":  "npx cap add android",
-    "android:open":  "npx cap open android",
-    "android:sync":  "npx cap sync android",
-    "android:run":   "npx cap run android",
+    "android:init": "npx cap add android",
+    "android:open": "npx cap open android",
+    "android:sync": "npx cap sync android",
+    "android:run": "npx cap run android",
     "android:build": "cd android && ./gradlew assembleRelease",
-
-    "ios:init":      "npx cap add ios",
-    "ios:open":      "npx cap open ios",
-    "ios:sync":      "npx cap sync ios",
-    "ios:run":       "npx cap run ios",
-
-    "sync:all":      "npx cap sync"
+    "ios:init": "npx cap add ios",
+    "ios:open": "npx cap open ios",
+    "ios:sync": "npx cap sync ios",
+    "ios:run": "npx cap run ios",
+    "sync:all": "npx cap sync"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2"

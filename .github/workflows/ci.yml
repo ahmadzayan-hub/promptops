@@ -29,6 +29,11 @@ jobs:
       - name: Install
         run: npm ci --no-audit --no-fund
 
+      # Cheap, and it guards the one failure mode that produced no error
+      # anywhere: a client defaulting to another product's deployment.
+      - name: Client endpoints
+        run: node scripts/check-client-endpoints.mjs
+
       - name: Typecheck
         run: npm run typecheck
 
