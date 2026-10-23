@@ -1,3 +1,7 @@
+# PromptOps: LLM-first prompt assistant
+
+The primary Studio flow now understands intent with a configured LLM, asks minimal clarifications, drafts a professional prompt, and runs a separate review against the original with at most one repair. Local rules are an optional, explicitly labeled privacy alternative, not AI fulfillment. [Provider activation, no-spend boundaries and verification limits](docs/LLM-COMPOSER.md).
+
 <img src="public/icon.svg" alt="Existing prompt-workspace mark" width="76" height="76">
 
 # PromptOps · ZAIan Studio
@@ -5,12 +9,13 @@
 **Give a rough idea the structure it needs to become a reusable prompt.**
 
 PromptOps turns Arabic or English text into an editable, structured prompt.
-The default composer runs locally using explicit rules, not an LLM, and leaves
-missing facts visible. Optional authenticated server workflows retain sessions
-and prompt versions when Supabase and Ollama are correctly configured.
+The primary composer uses an explicitly configured LLM for understanding,
+clarification, drafting and a separate review pass. An optional local rules mode
+leaves missing facts visible without inference. The new LLM flow is stateless;
+legacy authenticated session workflows still retain versions when configured.
 ZAIan Studio is the name used by its browser, desktop and mobile client packages.
 
-Next.js 15 · React 18 · TypeScript · Supabase · Ollama
+Next.js 15 · React 18 · TypeScript · Supabase · Ollama / optional Groq
 
 [Capabilities](#what-it-helps-you-do) · [Setup](#local-setup) ·
 [Clients](#browser-desktop-and-mobile) · [Verification](#verify-changes) ·
@@ -33,20 +38,23 @@ Next.js 15 · React 18 · TypeScript · Supabase · Ollama
 The canonical source is [`ahmadzayan-hub/promptops`](https://github.com/ahmadzayan-hub/promptops),
 branch `main`. The studio is at `/studio`.
 
-The 23 October 2026 integrated source, `0e521daf0d002d6eba7ed374ef44d4f63d281c82`,
+The historical 23 October 2026 tenant/integration snapshot, `0e521daf0d002d6eba7ed374ef44d4f63d281c82`,
 passed [quality CI](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398072)
 and [isolated tenant/concurrency checks](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398035).
-This does not establish a current authenticated, durable production installation.
+Those historical checks do not validate the latest LLM-first changes. Check the
+exact current PR/head CI separately; neither mocked tests nor a successful build
+establish live provider acceptance or a durable production installation.
 
 The broader governed prompt lifecycle is the product direction, not a completed
 feature claim. Current session states cover intake, clarification, readiness
 and finalization. Approval, benchmark/A-B workflows, release stages, rollback
 and portfolio assurance integration remain separate work.
 
-**Current composer:** `/` and `/studio` now use a working, deterministic local
-compiler with no account, inference service or network request required to compose.
-This is not a demo and is not an LLM. The previous forced demo environment flag
-has been removed. Local drafts are not automatically stored or synchronized.
+**Current composer:** `/` and `/studio` open the LLM-first workflow. It requires
+workspace sign-in and an explicitly configured eligible provider, and shows
+unavailable rather than pretending a template is AI. The optional local compiler
+needs no account, inference service or network call and is clearly labeled no LLM.
+Drafts are not automatically stored or synchronized.
 
 **Deployment is separate from source readiness:** the existing Vercel alias can
 still serve an older build until a deployment of this source is verified. A
@@ -68,10 +76,11 @@ cp .env.example .env.local
 ```
 
 You can run the local compiler immediately, without environment variables.
-Configure a dedicated development Supabase project and a reachable Ollama
-service only for the optional authenticated workflow. The prompt orchestration
-code calls `src/lib/llm/ollama.ts`; unrelated provider keys in `.env.example`
-do not configure that service.
+For the primary LLM workflow, configure workspace authentication and exactly one
+provider following [the activation guide](docs/LLM-COMPOSER.md). The new central
+provider configuration is `src/lib/llm/config.ts`; legacy session routes continue
+to use the existing Ollama adapter. Unrelated provider keys in `.env.example` do
+not configure this workflow.
 
 | Configuration | Purpose |
 | --- | --- |
@@ -141,10 +150,10 @@ session save/reload and provider failure handling need separate acceptance tests
 ## بالعربية
 
 **PromptOps** يحوّل الفكرة الأولية إلى طلب أوضح للنموذج عبر فهم الهدف وطرح أسئلة
-واستكمال السياق وحفظ النسخ. **ZAIan Studio** هو اسم حزم العملاء المرتبطة به.
+واستكمال السياق والصياغة والمراجعة بنموذج LLM مُعد صراحةً. المسار الجديد لا يحفظ جلسات؛ حفظ النسخ يخص مسارات مساحة العمل السابقة. **ZAIan Studio** هو اسم حزم العملاء المرتبطة به.
 
 النسخة الكاملة تحتاج تسجيل دخول وقاعدة بيانات وخدمة استدلال حقيقية ومختبرة.
-العرض التجريبي لا يحقق ذلك، كما أن اعتماد الطلبات وإطلاقها والتراجع عنها ليست
+البديل المحلي يعمل بقواعد واضحة وليس نموذج LLM. لا وعد بخدمة مجانية أو حصة غير محدودة، كما أن اعتماد الطلبات وإطلاقها والتراجع عنها ليست
 دورة مكتملة في التطبيق الحالي. تبقى هذه الحدود واضحة بدل تقديم وعود غير منفذة.
 
 ## License and contributions

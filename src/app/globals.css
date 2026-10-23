@@ -686,3 +686,13 @@ html.dark .card .list-item:hover { background: rgba(255,255,255,0.07); }
 @media(prefers-reduced-motion:reduce) { .prompt-workspace * { animation:none!important; transition:none!important; } }
 
 .prompt-brand-art { flex:none; width:56px; height:55px; object-fit:contain; }
+
+/* LLM-first mode keeps the existing local composer as a privacy alternative. */
+.prompt-mode { max-width: 1180px; margin: 24px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+.prompt-mode button { border: 1px solid var(--border, #34443e); border-radius: 999px; padding: 10px 16px; font-size: 13px; }
+.prompt-mode button.is-selected { background: #b6f4d2; color: #10251b; }
+.prompt-consent { display: block; font-size: 13px; line-height: 1.8; margin: 16px 0; }
+.prompt-consent input { width: 18px; height: 18px; vertical-align: middle; margin-inline-end: 8px; accent-color: #39a76f; }
+.prompt-ai-question { display: grid; gap: 6px; margin: 16px 0; font-size: 14px; }
+.prompt-ai-question small { opacity: .7; }
+.prompt-ai-question input { min-width: 0; border: 1px solid #698276; border-radius: 10px; padding: 10px; background: transparent; }

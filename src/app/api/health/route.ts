@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { modelAvailability } from "@/lib/llm/config";
 import { env, isSupabaseConfigured } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +15,5 @@ export async function GET() {
       if (Array.isArray(data?.models)) ollama = "reachable";
     } catch { /* Report unavailable without leaking provider URLs or errors. */ }
   }
-  return NextResponse.json({ status: "ok", service: "promptops", composer: { engine: "local-rules", available: true, requiresAccount: false }, workspace: { configured: isSupabaseConfigured(), verified: false }, ollama: { status: ollama, modelVerified: false } }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ status: "ok", service: "promptops", composer: { engine: "local-rules", available: true, requiresAccount: false, role: "optional-alternative" }, llmComposer: { ...modelAvailability(), requiresAccount: true }, workspace: { configured: isSupabaseConfigured(), verified: false }, ollama: { status: ollama, modelVerified: false } }, { headers: { "Cache-Control": "no-store" } });
 }

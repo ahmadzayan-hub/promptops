@@ -17,16 +17,26 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => { await context?.close(); if (folder) rmSync(folder, { recursive: true, force: true }); });
 async function fixture(html: string) {
-  const page = await context.newPage(); await page.goto('http://127.0.0.1:3000/studio'); await page.setContent(html); return page;
+  const page = await context.newPage();
+  const url = `http://127.0.0.1:3000/__extension_fixture/${crypto.randomUUID()}`;
+  // Serve a genuine isolated document, not setContent over a hydrating Next page.
+  // Late React/router work could previously replace the fixture with Studio.
+  await page.route(url, route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body data-extension-fixture="true">${html}</body></html>` }));
+  await page.goto(url);
+  await expect(page.locator('body')).toHaveAttribute('data-extension-fixture', 'true');
+  await expect(page.locator('script')).toHaveCount(0);
+  return page;
 }
 async function inject(page: Page, selector = 'textarea') {
+  await expect(page.locator('body')).toHaveAttribute('data-extension-fixture', 'true');
+  await expect(page.locator(selector)).toHaveCount(1);
   await page.locator(selector).focus();
   await page.locator(selector).evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(7, 21));
-  await worker.evaluate(async () => {
+  await worker.evaluate(async (url: string) => {
     const api = (globalThis as any).chrome;
-    const tabs = await api.tabs.query({ url: 'http://127.0.0.1:3000/*' });
-    await api.scripting.executeScript({ target: { tabId: tabs[tabs.length - 1].id }, files: ['content.js'] });
-  });
+    const tabs = await api.tabs.query({ url }); if (tabs.length !== 1) throw new Error('fixture_tab_not_unique');
+    await api.scripting.executeScript({ target: { tabId: tabs[0].id }, files: ['content.js'] });
+  }, page.url());
   await expect(page.locator('#promptops-review')).toHaveCount(1);
   // Await background composition and focus inside the closed shadow preview.
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('promptops-review');
@@ -88,7 +98,7 @@ test('undo refuses to overwrite a later edit', async () => {
 test('contenteditable fields fail closed until editor selection contract is verified', async () => {
   const page = await fixture('<div contenteditable="true">write an email</div>');
   await page.locator('[contenteditable]').focus();
-  await worker.evaluate(async () => { const api = (globalThis as any).chrome; const tabs = await api.tabs.query({ url: 'http://127.0.0.1:3000/*' }); await api.scripting.executeScript({ target: { tabId: tabs[tabs.length - 1].id }, files: ['content.js'] }); });
+  await worker.evaluate(async (url: string) => { const api = (globalThis as any).chrome; const tabs = await api.tabs.query({ url }); if (tabs.length !== 1) throw new Error('fixture_tab_not_unique'); await api.scripting.executeScript({ target: { tabId: tabs[0].id }, files: ['content.js'] }); }, page.url());
   await expect(page.locator('#promptops-review')).toHaveCount(1);
   await page.keyboard.press('Enter'); await expect(page.locator('#promptops-review')).toHaveCount(0);
   await expect(page.locator('[contenteditable]')).toHaveText('write an email'); await page.close();

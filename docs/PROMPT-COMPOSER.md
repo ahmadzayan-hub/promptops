@@ -1,4 +1,6 @@
-# PromptOps: a prompt compiler, not a task executor
+# Optional local compiler, not a task executor
+
+The primary Studio now uses the [LLM-first flow](LLM-COMPOSER.md). This document describes the preserved local alternative and the original crash fix.
 
 ## Product outcome
 
@@ -9,7 +11,7 @@ Missing context, audience and deliverable are explicit placeholders and optional
 questions, not fabricated facts. Purpose inference is a small, visible heuristic
 that the user can override. It is not semantic understanding by an AI model.
 
-The default is a real deterministic local compiler. It does not need a provider,
+The optional privacy alternative is a real deterministic local compiler. It does not need a provider,
 API key, account, paid service or server round trip. There are no image-only
 style chips on unrelated tasks. An image purpose remains available.
 

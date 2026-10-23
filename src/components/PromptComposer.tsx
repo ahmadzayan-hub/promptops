@@ -1,120 +1,85 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { ArrowUpRight, Check, CheckCheck, Copy, FileDown, Fingerprint, Keyboard, LoaderCircle, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Fingerprint, LoaderCircle, RotateCcw, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { composePrompt, inferPurpose, MAX_PROMPT_LENGTH, type ComposeResult, type Purpose } from "@/lib/prompt-composer";
-import { postStudioSession } from "@/lib/studio-api";
-
-const copy = {
-  en: {
-    eyebrow: "YOUR INTENT, WELL EXPRESSED", title: "A rough thought.\nA clearer prompt.", subtitle: "Write it your way. Build a structured prompt, fill the gaps you choose, and make it yours before you copy.",
-    local: "On-device composer", localNote: "Real, rule-based composition. Not an AI model. No account, API key or network call needed to compose.",
-    input: "What are you trying to do?", inputNote: "A sentence, a messy brief, or a whole idea. Your original wording stays intact.", placeholder: "e.g. Help me plan the launch of my app. I don't know where to start…", examples: ["Write an email about a delayed delivery", "Debug a React app without changing its behavior", "Compare two ideas for a small business"],
-    purpose: "Purpose", purposes: { auto: "Auto", general: "Anything", writing: "Write", coding: "Build", research: "Research", planning: "Plan", image: "Create an image" }, inferred: "Suggested purpose", optional: "Add details · optional", context: "Context & source material", audience: "Audience", constraints: "Must-haves & boundaries", format: "Desired output", contextHint: "Paste only the context you want included", audienceHint: "Who will use the result?", constraintsHint: "Tone, length, deadlines, budget… only what you know", formatHint: "e.g. An email, numbered steps, or a comparison", build: "Build my prompt", rebuild: "Update my prompt", preview: "Your prompt", previewNote: "Editable. No task execution. Server requests only when you choose.", emptyTitle: "A useful prompt has a clear shape.", emptyNote: "Your idea becomes a task, with context, boundaries and a way to check the result.", sections: ["Role", "Task", "Context", "Constraints", "Output format", "Review criteria"], missing: "Details you can still add", missingNote: "Optional. Unanswered questions stay visible in the prompt, never filled with invented facts.", changes: "What changed", compare: "Compare with your original", original: "Original", generated: "Structured", copy: "Copy prompt", copied: "Copied", download: "Download .txt", undo: "Undo edits", edited: "Edited by you", ready: "Ready to review", stale: "Your brief changed. Update the prompt before copying or downloading.", privacy: "Not saved · no cloud sync", saved: "Saved to your workspace by the server", localEdits: "Server version saved · your later edits are local, not synced", priorSaved: "A prior server version was saved · this draft is local", attempted: "Server request attempted · a partial session may exist in History", safety: "You decide what leaves this page", privacyBody: "Local composition does not transmit your text. Copy and download happen only when you ask. Closing or refreshing clears this draft.", integrations: "Where you already type", browser: "Browser selection", browserBody: "The extension uses a keyboard shortcut or right-click on selected text. Review, confirm replacement, and undo. No background typing capture.", mobile: "Mobile & desktop", mobileBody: "Use this responsive web app today. Native shells are in the repository; system-wide Android and iOS keyboards are not shipped or verified yet.", docs: "Integration guide", server: "Use my connected workspace", serverBody: "Optional: send this structured brief to your configured server and Ollama, and save a session to your signed-in workspace. No new paid provider is used. An unavailable server is an error, not AI success. Cancel stops waiting, but the server may finish and save a session.", serverAction: "Send & refine with Ollama", cancel: "Cancel request", serverBusy: "Waiting for your server…", serverUnavailable: "The server could not complete this request. Your local draft is unchanged. Check sign-in, workspace and Ollama configuration.", error: "That could not be completed. Your input is still here.", clipboardError: "Clipboard access was blocked. Select and copy the prompt manually.", resultLabel: "Editable structured prompt", engine: "Local rules", serverEngine: "Workspace / Ollama", sourceWarning: "Review this model output for invented details before use.", count: "characters", blank: "Start with any non-empty text.",
-  },
-  ar: {
-    eyebrow: "فكرتك، بصياغة أوضح", title: "فكرة على راحتك.\nبرومبت على أصوله.", subtitle: "اكتب بطريقتك. حوّل فكرتك إلى طلب منظم، وأكمل ما تختاره من التفاصيل، ثم راجعه وعدّله قبل النسخ.",
-    local: "صياغة على جهازك", localNote: "صياغة فعلية بقواعد محلية، وليست نموذج ذكاء اصطناعي. لا تحتاج حسابًا أو مفتاح API أو اتصالًا بالخادم للصياغة.",
-    input: "ما الذي تريد إنجازه؟", inputNote: "جملة، مسودة غير مرتبة، أو فكرة كاملة. نحافظ على كلامك الأصلي كما هو.", placeholder: "مثلًا: ساعدني أخطط لإطلاق تطبيقي، ومش عارف أبدأ منين…", examples: ["اكتب رسالة عن تأخر تسليم طلب", "أصلح تطبيق React دون تغيير سلوكه", "قارن فكرتين لمشروع صغير"],
-    purpose: "الهدف", purposes: { auto: "تلقائي", general: "أي شيء", writing: "كتابة", coding: "برمجة", research: "بحث", planning: "تخطيط", image: "إنشاء صورة" }, inferred: "هدف مقترح", optional: "أضف تفاصيل · اختياري", context: "السياق والمواد المرجعية", audience: "الجمهور", constraints: "المتطلبات والحدود", format: "شكل النتيجة", contextHint: "أضف فقط السياق الذي تريد تضمينه", audienceHint: "من سيستخدم النتيجة؟", constraintsHint: "النبرة، الطول، الموعد، الميزانية… فقط ما تعرفه", formatHint: "مثل رسالة، خطوات مرقمة، أو مقارنة", build: "صِغ البرومبت", rebuild: "حدّث البرومبت", preview: "البرومبت الخاص بك", previewNote: "قابل للتعديل. لا تنفيذ للمهمة، والإرسال للخادم باختيارك فقط.", emptyTitle: "الطلب المفيد له بناء واضح.", emptyNote: "فكرتك تصبح مهمة محددة، مع سياق وحدود ومعايير لمراجعة النتيجة.", sections: ["الدور", "المهمة", "السياق", "القيود", "شكل المخرجات", "معايير المراجعة"], missing: "تفاصيل يمكنك إضافتها", missingNote: "اختيارية. تظل الأسئلة غير المجابة واضحة في البرومبت بدل ملئها بمعلومات مختلقة.", changes: "ما الذي تغيّر؟", compare: "قارن بالنص الأصلي", original: "الأصلي", generated: "المنظم", copy: "انسخ البرومبت", copied: "تم النسخ", download: "تنزيل txt", undo: "تراجع عن التعديلات", edited: "عدّلته بنفسك", ready: "جاهز للمراجعة", stale: "تغيّرت فكرتك. حدّث البرومبت قبل نسخه أو تنزيله.", privacy: "غير محفوظ · لا مزامنة سحابية", saved: "حُفظت جلسة في مساحة عملك على الخادم", localEdits: "حُفظت نسخة الخادم · تعديلاتك التالية محلية ولم تتزامن", priorSaved: "حُفظت نسخة سابقة على الخادم · هذه المسودة محلية", attempted: "جرت محاولة إرسال للخادم · قد توجد جلسة جزئية في السجل", safety: "أنت تقرر ما يغادر هذه الصفحة", privacyBody: "الصياغة المحلية لا ترسل نصك. النسخ والتنزيل يتمان بطلبك فقط. إغلاق الصفحة أو تحديثها يمسح هذه المسودة.", integrations: "حيث تكتب بالفعل", browser: "النص المحدد في المتصفح", browserBody: "تعمل الإضافة باختصار لوحة المفاتيح أو النقر بالزر الأيمن على نص محدد. معاينة ثم موافقة على الاستبدال مع التراجع، دون التقاط الكتابة في الخلفية.", mobile: "الموبايل والكمبيوتر", mobileBody: "استخدم تطبيق الويب المتجاوب الآن. توجد حاويات تطبيقات أصلية في المستودع؛ لوحة مفاتيح شاملة لـ Android وiOS لم تُطلق أو تُختبر بعد.", docs: "دليل الدمج", server: "استخدم مساحة عملي المتصلة", serverBody: "اختياري: أرسل هذا الطلب المنظم إلى خادمك وOllama، واحفظ جلسة في مساحة العمل التي سجلت الدخول إليها. لا نستخدم مزودًا مدفوعًا جديدًا. تعذر الخدمة يُعرض كخطأ، وليس نجاحًا مزيفًا. الإلغاء يوقف الانتظار، لكن قد يُكمل الخادم الطلب ويحفظ جلسة.", serverAction: "أرسل وحسّن باستخدام Ollama", cancel: "إلغاء الطلب", serverBusy: "بانتظار خادمك…", serverUnavailable: "لم يُكمل الخادم الطلب. مسودتك المحلية لم تتغير. تحقق من تسجيل الدخول ومساحة العمل وإعداد Ollama.", error: "لم تكتمل العملية. نصك لا يزال موجودًا.", clipboardError: "المتصفح منع النسخ. حدد البرومبت وانسخه يدويًا.", resultLabel: "البرومبت المنظم القابل للتعديل", engine: "قواعد محلية", serverEngine: "مساحة العمل / Ollama", sourceWarning: "راجع مخرجات النموذج للتأكد من عدم اختلاق تفاصيل قبل استخدامها.", count: "حرف", blank: "ابدأ بأي نص غير فارغ.",
-  },
-};
-const purposes: Purpose[] = ["auto", "general", "writing", "coding", "research", "planning", "image"];
+import LocalPromptComposer from "./LocalPromptComposer";
+import { availabilitySchema, ComposeClientError, requestComposition, type Availability } from "@/lib/llm/compose-client";
+import type { Analysis, ComposeRequest, ComposeResult } from "@/lib/llm/compose-contract";
 
 export default function PromptComposer() {
-  const { locale } = useI18n();
-  const ar = locale === "ar";
-  const t = ar ? copy.ar : copy.en;
-  const [raw, setRaw] = useState("");
-  const [purpose, setPurpose] = useState<Purpose>("auto");
-  const [details, setDetails] = useState({ context: "", audience: "", constraints: "", format: "" });
-  const [result, setResult] = useState<ComposeResult | null>(null);
-  const [draft, setDraft] = useState("");
-  const [baseline, setBaseline] = useState("");
-  const [snapshot, setSnapshot] = useState("");
-  const [notice, setNotice] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [source, setSource] = useState<"local" | "server">("local");
-  const [busy, setBusy] = useState(false);
-  const [serverState, setServerState] = useState<"never" | "pending" | "confirmed" | "unknown">("never");
-  const controller = useRef<AbortController | null>(null);
-  const currentInput = JSON.stringify({ raw, purpose, ...details });
-  const latestInput = useRef(currentInput);
-  latestInput.current = currentInput;
-  const stale = !!result && currentInput !== snapshot;
-  const storageLabel = source === "server" ? (draft === baseline ? t.saved : t.localEdits) : serverState === "confirmed" ? t.priorSaved : serverState === "pending" ? t.serverBusy : serverState === "unknown" ? t.attempted : t.privacy;
-  useEffect(() => () => { controller.current?.abort(); }, []);
-  useEffect(() => { controller.current?.abort(); controller.current = null; setBusy(false); setServerState(s => s === "pending" ? "unknown" : s); setCopied(false); }, [currentInput]);
-  const build = () => {
-    controller.current?.abort(); controller.current = null; setBusy(false); setServerState(s => s === "pending" ? "unknown" : s);
+  const { locale } = useI18n(); const ar = locale === "ar";
+  const t = (en: string, arabic: string) => ar ? arabic : en;
+  const [local, setLocal] = useState(false); const [localVisited, setLocalVisited] = useState(false);
+  const [raw, setRaw] = useState(""); const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [availability, setAvailability] = useState<Availability | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null); const [result, setResult] = useState<ComposeResult | null>(null);
+  const [draft, setDraft] = useState(""); const [consent, setConsent] = useState(false); const [reviewed, setReviewed] = useState(false);
+  const [busy, setBusy] = useState<"understand" | "draft" | null>(null); const [error, setError] = useState("");
+  const [uncertain, setUncertain] = useState(false); const [cooldown, setCooldown] = useState(0); const [copied, setCopied] = useState(false);
+  const controller = useRef<AbortController | null>(null); const revision = useRef(0);
+  useEffect(() => { const abort = new AbortController(); fetch("/api/compose", { signal: abort.signal }).then(r => r.json()).then(data => { const parsed = availabilitySchema.safeParse(data); if (parsed.success) setAvailability(parsed.data); }).catch(() => {}); return () => { abort.abort(); controller.current?.abort(); }; }, []);
+  useEffect(() => { if (!cooldown) return; const timer = setTimeout(() => setCooldown(Math.max(0, cooldown - 1)), 1000); return () => clearTimeout(timer); }, [cooldown]);
+  const invalidate = () => { revision.current++; if (controller.current) { controller.current.abort(); controller.current = null; setUncertain(true); } setBusy(null); setResult(null); setDraft(""); setReviewed(false); setCopied(false); };
+  const cancel = () => { revision.current++; controller.current?.abort(); controller.current = null; setBusy(null); setUncertain(true); };
+  const send = async (phase: "understand" | "draft") => {
+    if (!availability?.configured || availability.provider === "unconfigured" || !availability.model || !consent || controller.current || uncertain || cooldown) return;
+    const abort = new AbortController(); controller.current = abort; const version = revision.current;
+    setBusy(phase); setError(""); setReviewed(false); setCopied(false);
+    const common = { requestId: crypto.randomUUID(), raw, locale: ar ? "ar" as const : "en" as const, consent: true as const, provider: availability.provider, model: availability.model };
+    const data: ComposeRequest = phase === "understand" ? { ...common, phase } : { ...common, phase, analysis: analysis!, answers };
     try {
-      const next = composePrompt({ raw, purpose, ...details });
-      setResult(next); setDraft(next.finalPrompt); setBaseline(next.finalPrompt); setSnapshot(currentInput); setSource("local"); setNotice(""); setCopied(false);
-    } catch { setNotice(t.blank); }
+      const response = await requestComposition(data, AbortSignal.any([abort.signal, AbortSignal.timeout(115000)]));
+      if (abort.signal.aborted || version !== revision.current) return;
+      if ("analysis" in response) { setAnalysis(response.analysis); setResult(null); setDraft(""); }
+      if ("result" in response) { setResult(response.result); setDraft(response.result.finalPrompt); }
+    } catch (e) {
+      if (version !== revision.current) return;
+      const failure = e instanceof ComposeClientError ? e : new ComposeClientError("request_uncertain", true);
+      setError(failure.code); setUncertain(failure.uncertain); setCooldown(failure.retryAfter);
+    } finally { if (controller.current === abort) { controller.current = null; setBusy(null); } }
   };
-  const send = async () => {
-    if (controller.current || stale || !result || serverState === "unknown") return;
-    const abort = new AbortController(); controller.current = abort; setBusy(true); setServerState("pending"); setNotice("");
-    const inputAtStart = currentInput;
-    try {
-      const session = await postStudioSession(draft, "generic", AbortSignal.any([abort.signal, AbortSignal.timeout(45000)]));
-      if (abort.signal.aborted || latestInput.current !== inputAtStart) return;
-      const version = [...session.prompt_versions].sort((a,b) => b.version-a.version)[0];
-      if (!version) throw new Error("invalid_session_response");
-      setDraft(version.final_prompt); setBaseline(version.final_prompt); setSource("server"); setServerState("confirmed"); setCopied(false);
-    } catch { if (controller.current === abort || !controller.current) setServerState("unknown"); if (!abort.signal.aborted) setNotice(t.serverUnavailable); }
-    finally { if (controller.current === abort) { controller.current = null; setBusy(false); } }
+  const errors: Record<string, string> = {
+    backend_not_configured: t("Workspace authentication is not configured. The local alternative is available.", "تسجيل الدخول لمساحة العمل غير مُعد. البديل المحلي متاح."),
+    unauthenticated: t("Sign in to your workspace before sending to the model.", "سجّل الدخول لمساحة العمل قبل الإرسال للنموذج."),
+    missing_key: t("The server owner must configure the chosen provider securely. Do not paste keys here.", "يلزم إعداد المزود بأمان على الخادم. لا تلصق المفاتيح هنا."),
+    no_spend_not_confirmed: t("The owner has not confirmed this account is eligible for no-spend use. No model request was made.", "لم يؤكد المالك أهلية الحساب للاستخدام دون إنفاق. لم نرسل طلبًا للنموذج."),
+    quota_exhausted: t("The provider quota is exhausted. No automatic retry or paid/provider switch. Wait for the account limit to reset or choose local rules.", "انتهت حصة المزود. لا إعادة تلقائية ولا تحويل مدفوع أو لمزود آخر. انتظر تجدد الحصة أو اختر القواعد المحلية."),
+    billing_required: t("The provider requires billing. PromptOps stopped; it will not enable payment or switch providers.", "المزود يطلب تفعيل الدفع. توقف PromptOps ولن يفعّل دفعًا أو يغيّر المزود."),
+    model_unavailable: t("The configured model is unavailable or retired. The owner must choose a supported model explicitly.", "النموذج المُعد غير متاح أو متوقف. على المالك اختيار نموذج مدعوم صراحةً."),
+    provider_changed: t("Provider configuration changed. Reload before consenting to the new destination.", "تغير إعداد المزود. أعد تحميل الصفحة قبل الموافقة على الوجهة الجديدة."),
+    invalid_model_response: t("The model returned invalid structure or evidence. This is not a successful draft.", "أعاد النموذج بنية أو أدلة غير صالحة. هذه ليست صياغة ناجحة."),
   };
-  const copyDraft = async () => {
-    try { await navigator.clipboard.writeText(draft); setCopied(true); setNotice(""); } catch { setNotice(t.clipboardError); }
-  };
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([draft], { type: "text/plain;charset=utf-8" }));
-    const a = document.createElement("a"); a.href = url; a.download = "promptops-prompt.txt"; a.click(); URL.revokeObjectURL(url);
-  };
-  const setDetail = (key: keyof typeof details, value: string) => setDetails(d => ({ ...d, [key]: value }));
-  return <main id="main" className="prompt-workspace" dir={ar ? "rtl" : "ltr"}>
-    <header className="prompt-intro">
-      <div><p className="prompt-eyebrow"><span />{t.eyebrow}</p><h1>{t.title}</h1><p className="prompt-subtitle">{t.subtitle}</p></div>
-      <aside className="prompt-engine"><Image className="prompt-brand-art" src="/promptops-brand-3d.webp" width={56} height={55} alt="" aria-hidden="true" loading="lazy" unoptimized /><div><strong>{t.local}</strong><p>{t.localNote}</p></div></aside>
-    </header>
-    <div className="prompt-columns">
-      <section className="prompt-panel prompt-input-panel" aria-labelledby="input-heading">
-        <div className="prompt-panel-heading"><span className="prompt-step">01</span><div><h2 id="input-heading">{t.input}</h2><p>{t.inputNote}</p></div></div>
-        <form onSubmit={e => { e.preventDefault(); build(); }}>
-          <label className="sr-only" htmlFor="raw">{t.input}</label>
-          <textarea id="raw" dir="auto" className="prompt-raw" placeholder={t.placeholder} value={raw} maxLength={MAX_PROMPT_LENGTH} rows={7} onChange={e => setRaw(e.target.value)} />
-          <div className="prompt-count"><span>{raw.length.toLocaleString(ar ? "ar" : "en")} / 8,000 {t.count}</span></div>
-          {!raw && <div className="prompt-examples">{t.examples.map(example => <button key={example} type="button" onClick={() => setRaw(example)}>{example}<ArrowUpRight size={15} /></button>)}</div>}
-          <fieldset className="prompt-purpose"><legend>{t.purpose}</legend><div>{purposes.map(p => <button key={p} type="button" aria-pressed={purpose === p} className={purpose === p ? "is-selected" : ""} onClick={() => setPurpose(p)}>{t.purposes[p]}</button>)}</div>{raw && purpose === "auto" && <p>{t.inferred}: {t.purposes[inferPurpose(raw)]}</p>}</fieldset>
-          <details className="prompt-details"><summary><SlidersHorizontal size={17} />{t.optional}</summary><div className="prompt-detail-fields">
-            <label htmlFor="context">{t.context}<textarea id="context" dir="auto" rows={3} maxLength={2000} value={details.context} placeholder={t.contextHint} onChange={e => setDetail("context", e.target.value)} /></label>
-            <label htmlFor="audience">{t.audience}<input id="audience" dir="auto" maxLength={500} value={details.audience} placeholder={t.audienceHint} onChange={e => setDetail("audience", e.target.value)} /></label>
-            <label htmlFor="constraints">{t.constraints}<textarea id="constraints" dir="auto" rows={2} maxLength={2000} value={details.constraints} placeholder={t.constraintsHint} onChange={e => setDetail("constraints", e.target.value)} /></label>
-            <label htmlFor="format">{t.format}<input id="format" dir="auto" maxLength={500} value={details.format} placeholder={t.formatHint} onChange={e => setDetail("format", e.target.value)} /></label>
-          </div></details>
-          <button className="prompt-primary prompt-build" type="submit" disabled={!raw.trim()}><Sparkles size={18} />{result ? t.rebuild : t.build}<ArrowUpRight size={19} /></button>
-        </form>
-        <p className="prompt-private"><Fingerprint size={15} />{storageLabel}</p>
-      </section>
-      <section className="prompt-panel prompt-output-panel" aria-labelledby="output-heading">
-        <div className="prompt-panel-heading"><span className="prompt-step">02</span><div><h2 id="output-heading">{t.preview}</h2><p>{t.previewNote}</p></div></div>
-        {!result ? <div className="prompt-empty"><div className="prompt-paper"><span /><span /><span />{t.sections.map((label,i) => <div key={label}><b>{String(i+1).padStart(2,"0")}</b><span>{label}</span><Check size={14}/></div>)}</div><h3>{t.emptyTitle}</h3><p>{t.emptyNote}</p></div> : <>
-          <div className="prompt-result-meta"><span className="prompt-status"><CheckCheck size={15} />{draft !== baseline ? t.edited : t.ready}</span><span>{source === "server" ? t.serverEngine : t.engine}</span></div>
-          {stale && <p className="prompt-warning" role="status">{t.stale}</p>}
-          {source === "server" && <p className="prompt-warning">{t.sourceWarning}</p>}
-          <label className="sr-only" htmlFor="prompt-result">{t.resultLabel}</label><textarea id="prompt-result" className="prompt-result" dir={result.locale === "ar" ? "rtl" : "ltr"} value={draft} maxLength={30000} rows={18} disabled={busy} onChange={e => { setDraft(e.target.value); setCopied(false); }} />
-          <div className="prompt-result-actions"><button className="prompt-primary" type="button" disabled={stale || !draft.trim() || busy} onClick={copyDraft}>{copied ? <Check size={17}/> : <Copy size={17}/>}{copied ? t.copied : t.copy}</button><button className="prompt-secondary" type="button" disabled={stale || !draft.trim() || busy} onClick={download}><FileDown size={17}/>{t.download}</button><button className="prompt-icon-button" type="button" aria-label={t.undo} title={t.undo} disabled={draft === baseline || busy} onClick={() => { setDraft(baseline); setCopied(false); }}><RotateCcw size={18}/></button></div>
-          {source === "local" && draft === result.finalPrompt && !stale && <div className="prompt-changes"><strong>{t.changes}</strong><ul>{result.changes.map(change => <li key={change}><Check size={14}/>{change}</li>)}</ul></div>}
-          {source === "local" && draft === result.finalPrompt && !stale && !!result.questions.length && <div className="prompt-questions"><h3>{t.missing}</h3><p>{t.missingNote}</p><ul>{result.questions.map(q => <li key={q.id}>{q.question}</li>)}</ul></div>}
-          <details className="prompt-details"><summary>{t.compare}</summary><p className="prompt-original" dir="auto">{result.original}</p></details>
-          <details className="prompt-details"><summary>{t.server}</summary><p>{t.serverBody}</p><button type="button" className="prompt-secondary" onClick={send} disabled={stale || busy || serverState === "unknown" || !draft.trim() || draft.length > MAX_PROMPT_LENGTH}>{busy ? <LoaderCircle className="animate-spin" size={17}/> : <Sparkles size={17}/>} {busy ? t.serverBusy : t.serverAction}</button>{busy && <button type="button" className="prompt-secondary" onClick={() => { controller.current?.abort(); controller.current = null; setBusy(false); setServerState("unknown"); }}>{t.cancel}</button>}<p className="prompt-private">{storageLabel}</p>{serverState === "unknown" && <p><a href="/history" target="_blank" rel="noreferrer">{ar ? "راجع سجل مساحة العمل أولًا" : "Check workspace History first"}</a><button type="button" className="prompt-secondary" onClick={() => setServerState("never")}>{ar ? "راجعت السجل، اسمح بطلب جديد" : "I checked History; allow a new request"}</button></p>}</details>
-        </>}
-        {notice && <p className="prompt-warning" role="alert">{notice}</p>}
-      </section>
-    </div>
-    <section className="prompt-bottom"><article><Fingerprint size={22}/><h2>{t.safety}</h2><p>{t.privacyBody}</p></article><article><Keyboard size={22}/><h2>{t.browser}</h2><p>{t.browserBody}</p><a href="https://github.com/ahmadzayan-hub/promptops/blob/main/docs/KEYBOARD-INTEGRATION.md" target="_blank" rel="noreferrer">{t.docs}<ArrowUpRight size={15}/></a></article><article><span className="prompt-platforms">Aa</span><h2>{t.mobile}</h2><p>{t.mobileBody}</p></article></section>
-  </main>;
+  const disabled = !raw.trim() || !consent || !availability?.configured || !availability.workspaceConfigured || !!busy || uncertain || cooldown > 0;
+  return <>
+    <nav className="prompt-mode" aria-label={t("Composition mode", "طريقة الصياغة")} dir={ar ? "rtl" : "ltr"}>
+      <button className={!local ? "is-selected" : ""} type="button" aria-pressed={!local} disabled={!!busy} onClick={() => setLocal(false)}>{t("AI · understand, draft, review", "نموذج LLM · يفهم ويصيغ ويراجع")}</button>
+      <button className={local ? "is-selected" : ""} type="button" aria-pressed={local} disabled={!!busy} onClick={() => { setLocalVisited(true); setLocal(true); }}>{t("Local alternative · no LLM", "بديل محلي · دون نموذج LLM")}</button>
+    </nav>
+    {localVisited && <div hidden={!local}><LocalPromptComposer initialRaw={raw} mainId={local ? "main" : "local-main"} /></div>}{!local && <main id="main" className="prompt-workspace" dir={ar ? "rtl" : "ltr"}>
+      <header className="prompt-intro"><div><p className="prompt-eyebrow"><span />{t("YOUR MEANING COMES FIRST", "المعنى أولًا")}</p><h1>{t("Understood. Written.\nThen checked.", "يفهم فكرتك. يصيغها.\nويراجعها.")}</h1><p className="prompt-subtitle">{t("An LLM understands your intent, asks only useful questions, writes a professional prompt, and reviews it against your original. You make the final decision.", "نموذج LLM يفهم قصدك، يسأل فقط عما يغيّر النتيجة، يصيغ برومبت احترافيًا، ثم يراجعه مقابل كلامك الأصلي. والقرار الأخير لك.")}</p></div><aside className="prompt-engine"><Sparkles size={28}/><div><strong>{availability?.configured ? `${availability.provider} · ${availability.model}` : t("Model setup required", "يلزم إعداد النموذج")}</strong><p>{t("Configuration is not a live model test. No unlimited/free-service promise.", "الإعداد لا يعني نجاح اختبار فعلي للنموذج. لا وعد بخدمة مجانية أو غير محدودة.")}</p></div></aside></header>
+      <div className="prompt-columns">
+        <section className="prompt-panel prompt-input-panel"><div className="prompt-panel-heading"><span className="prompt-step">01</span><div><h2>{t("What do you want to achieve?", "ما الذي تريد إنجازه؟")}</h2><p>{t("Your original stays unchanged. We write a prompt, not execute its task.", "نصك الأصلي يظل كما هو. نصيغ الطلب ولا ننفذ المهمة.")}</p></div></div>
+          <label htmlFor="ai-raw" className="sr-only">{t("Original brief", "النص الأصلي")}</label><textarea id="ai-raw" className="prompt-raw" rows={7} maxLength={8000} dir="auto" value={raw} placeholder={t("Describe anything you need help asking an AI to do…", "اكتب أي فكرة تريد تحويلها إلى طلب واضح للذكاء الاصطناعي…")} onChange={e => { invalidate(); setAnalysis(null); setAnswers({}); setRaw(e.target.value); }} />
+          <p className="prompt-count">{raw.length} / 8,000</p>
+          <div className="prompt-consent"><label><input type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); if (!e.target.checked && busy) cancel(); }} />{t("I choose to send this brief and my answers through this workspace server to ", "أختار إرسال النص وإجاباتي عبر خادم مساحة العمل إلى ")}{availability?.provider === "groq" ? "Groq (api.groq.com)" : availability?.provider === "ollama" ? t("the owner's configured Ollama server", "خادم Ollama الذي أعدّه المالك") : t("the provider the owner will configure", "المزود الذي سيعدّه المالك")}{t(" for understanding, drafting and review. Up to five model calls per complete flow; provider retention policies apply. No automatic provider switch.", " للفهم والصياغة والمراجعة. حتى خمسة طلبات للنموذج في كل دورة كاملة، وتطبق سياسة احتفاظ المزود. لا تبديل تلقائي للمزود.")}</label></div>
+          {!availability?.configured || !availability.workspaceConfigured ? <p className="prompt-warning">{t("AI is not activated here yet. The owner must configure workspace sign-in and one eligible provider. No model request is enabled in this flow. You can use the clearly labeled local alternative now.", "الذكاء الاصطناعي غير مُفعّل هنا بعد. يلزم إعداد دخول مساحة العمل ومزود واحد مؤهل. الإرسال للنموذج غير مفعّل في هذا المسار. يمكنك استخدام البديل المحلي الموضح الآن.")} <a href="/login">{t("Sign in", "تسجيل الدخول")}</a>{availability?.reason && errors[availability.reason] ? <span> {errors[availability.reason]}</span> : null}</p> : null}
+          <button type="button" className="prompt-primary prompt-build" disabled={disabled} onClick={() => send("understand")}><Sparkles size={18}/>{t("Understand my intent", "افهم قصدي")}<ArrowUpRight size={18}/></button>
+          {analysis && <div className="prompt-questions"><h3>{t("Understanding to confirm", "فهم النموذج للتأكيد")}</h3><p dir="auto">{analysis.intent}</p><details><summary>{t("Source facts and boundaries", "حقائق وحدود من النص")}</summary><ul>{analysis.protectedQuotes.map(q => <li key={q} dir="auto">{q}</li>)}</ul></details><p>{t("Correct the original if this understanding is wrong. Questions are optional; unknowns remain explicit.", "عدّل النص الأصلي إن كان الفهم غير صحيح. الأسئلة اختيارية، وما لا تجيبه يظل غير محسوم.")}</p>{analysis.questions.map(q => <label className="prompt-ai-question" key={q.id} htmlFor={q.id}>{q.question}<small>{q.why}</small><input id={q.id} maxLength={1000} dir="auto" value={answers[q.id] ?? ""} onChange={e => { invalidate(); setAnswers(a => ({ ...a, [q.id]: e.target.value })); }} /></label>)}<button type="button" className="prompt-primary" disabled={disabled} onClick={() => send("draft")}>{t("Draft & run a separate review", "صِغ وراجع في خطوة منفصلة")}</button></div>}
+          <p className="prompt-private"><Fingerprint size={16}/>{t("No workspace session is saved by this flow. Draft stays in this tab; server deduplication is temporary memory only.", "هذا المسار لا يحفظ جلسة في مساحة العمل. المسودة في هذه الصفحة، ومنع التكرار بالخادم مؤقت في الذاكرة فقط.")}</p>
+        </section>
+        <section className="prompt-panel prompt-output-panel"><div className="prompt-panel-heading"><span className="prompt-step">02</span><div><h2>{t("Professional draft, with review", "صياغة احترافية مع مراجعتها")}</h2><p>{t("A separate review pass uses the same configured model. It is not an independent fact-check or a guarantee of truth.", "مراجعة منفصلة بالنموذج المُعد نفسه، وليست تدقيقًا مستقلًا للحقائق أو ضمانًا للصحة.")}</p></div></div>
+          {!result && <div className="prompt-empty"><Sparkles size={36}/><h3>{busy ? t("Working with your chosen model…", "نعمل مع النموذج الذي اخترته…") : t("Understand → clarify → draft → review", "فهم ← توضيح ← صياغة ← مراجعة")}</h3><p>{t("One repair at most if checks find a problem. No canned output presented as AI success.", "محاولة إصلاح واحدة فقط إذا وجدت المراجعة مشكلة. لا نقدّم قالبًا جاهزًا بوصفه نجاحًا للذكاء الاصطناعي.")}</p></div>}
+          {result && <><p className="prompt-status">{draft !== result.finalPrompt ? t("Your edits have not been model-reviewed", "تعديلاتك لم يراجعها النموذج") : result.modelReview === "passed" ? t("Model checks passed · human review still required", "اجتازت فحوص النموذج · ما زالت مراجعتك مطلوبة") : t("Review found unresolved issues · not approved", "المراجعة وجدت مشكلات باقية · غير معتمد")}</p>{result.repaired && <p>{t("One repair was attempted and reviewed again.", "جرت محاولة إصلاح واحدة ومراجعتها مجددًا.")}</p>}{result.issues.length > 0 && <ul className="prompt-warning">{result.issues.map((issue, i) => <li key={i} dir="auto">{issue}</li>)}</ul>}
+            <label className="sr-only" htmlFor="ai-result">{t("LLM draft", "مسودة النموذج")}</label><textarea id="ai-result" className="prompt-result" rows={20} dir="auto" maxLength={30000} disabled={!!busy} value={draft} onChange={e => { setDraft(e.target.value); setReviewed(false); setCopied(false); }} />
+            <details className="prompt-details"><summary>{t("Compare with untouched original", "قارن بالنص الأصلي دون تغيير")}</summary><p className="prompt-original" dir="auto">{raw}</p></details>
+            <label className="prompt-consent"><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />{t("I reviewed the original meaning, facts, constraints, assumptions and unresolved issues before using this draft.", "راجعت المعنى والحقائق والقيود والافتراضات والمشكلات الباقية قبل استخدام المسودة.")}</label>
+            <div className="prompt-result-actions"><button className="prompt-primary" disabled={!reviewed || !draft.trim() || !!busy} onClick={async () => { try { await navigator.clipboard.writeText(draft); setCopied(true); } catch { setError("clipboard_blocked"); } }}>{copied ? <Check size={17}/> : <Copy size={17}/>} {copied ? t("Copied", "تم النسخ") : t("Copy reviewed prompt", "انسخ البرومبت بعد المراجعة")}</button><button className="prompt-secondary" disabled={draft === result.finalPrompt || !!busy} onClick={() => { setDraft(result.finalPrompt); setReviewed(false); setCopied(false); }}><RotateCcw size={17}/>{t("Undo edits", "تراجع عن التعديلات")}</button></div></>}
+          {busy && <p role="status"><LoaderCircle className="animate-spin" size={18}/>{busy === "understand" ? t("Understanding…", "نفهم القصد…") : t("Drafting and reviewing…", "نصيغ ونراجع…")} <button className="prompt-secondary" type="button" onClick={cancel}>{t("Cancel waiting", "إلغاء الانتظار")}</button></p>}
+          {error && <p className="prompt-warning" role="alert">{errors[error] ?? (error === "clipboard_blocked" ? t("Clipboard blocked. Select and copy manually.", "المتصفح منع النسخ. حدد النص وانسخه يدويًا.") : t("The request did not complete. Your original is still here. No automatic retry or fallback was made.", "لم يكتمل الطلب. نصك الأصلي موجود. لم نعد المحاولة أو نغيّر المزود تلقائيًا."))}</p>}
+          {cooldown > 0 && <p role="status">{t("Provider asks to wait (seconds): ", "المزود يطلب الانتظار (ثانية): ")}{cooldown}</p>}
+          {uncertain && <div className="prompt-warning"><p>{t("The outcome is uncertain. Cancel only stops waiting; the provider may finish and count usage. No session is saved, but retrying can repeat model usage. Check provider activity before a new request.", "نتيجة الطلب غير مؤكدة. الإلغاء يوقف الانتظار فقط؛ قد يكمل المزود ويحسب الاستخدام. لا تُحفظ جلسة، لكن المحاولة مجددًا قد تكرر استخدام النموذج. راجع نشاط المزود قبل طلب جديد.")}</p><button className="prompt-secondary" onClick={() => { setUncertain(false); setError(""); }}>{t("I checked; allow a new request", "راجعت الأمر؛ اسمح بطلب جديد")}</button></div>}
+        </section>
+      </div>
+    </main>}
+  </>;
 }
