@@ -20,3 +20,8 @@ npm-debug.log*
 
 # extension build
 extension/dist/
+
+
+# Isolated browser verification output
+test-results/
+playwright-report/

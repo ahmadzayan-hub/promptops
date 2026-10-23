@@ -1,46 +1,35 @@
-// Background service worker — handles network calls to the SaaS API.
-const DEFAULTS = {
-  apiBase: "http://localhost:3000",
-  apiKey: "dev-extension-key"
-};
+import { composePrompt } from './composer.js';
 
-async function getConfig() {
-  const cfg = await chrome.storage.sync.get(["apiBase", "apiKey"]);
-  return {
-    apiBase: cfg.apiBase || DEFAULTS.apiBase,
-    apiKey: cfg.apiKey || DEFAULTS.apiKey
-  };
-}
-
-async function callEnhance(payload) {
-  const cfg = await getConfig();
-  const res = await fetch(`${cfg.apiBase}/api/extension/enhance`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${cfg.apiKey}`
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API ${res.status}: ${err}`);
+async function openSelection(tabId, frameId = 0) {
+  if (!Number.isInteger(tabId)) return;
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, frameIds: [frameId] }, files: ['content.js'] });
+  } catch {
+    // Restricted pages cannot be injected. Open the local popup for manual paste.
+    try { await chrome.action.openPopup(); } catch { /* browser may require another gesture */ }
   }
-  return res.json();
 }
-
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  (async () => {
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: 'promptops-selection', title: 'PromptOps: review selected text', contexts: ['selection', 'editable'] }));
+});
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === 'promptops-selection') void openSelection(tab?.id, info.frameId ?? 0);
+});
+chrome.commands.onCommand.addListener(async command => {
+  if (command !== 'improve-selection') return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  void openSelection(tab?.id);
+});
+chrome.runtime.onMessage.addListener((msg, sender, respond) => {
+  if (sender.id !== chrome.runtime.id) return false;
+  if (msg?.type === 'ENHANCE') {
     try {
-      if (msg.type === "ENHANCE") {
-        const data = await callEnhance(msg.payload);
-        sendResponse({ ok: true, data });
-      } else {
-        sendResponse({ ok: false, error: "unknown_message" });
-      }
-    } catch (e) {
-      sendResponse({ ok: false, error: String(e) });
-    }
-  })();
-  return true; // async
+      const result = composePrompt({ raw: msg.payload?.raw_prompt, purpose: msg.payload?.purpose ?? 'auto' });
+      respond({ ok: true, data: { ...result, final_prompt: result.finalPrompt } });
+    } catch { respond({ ok: false, error: 'Select or paste between 1 and 8,000 characters.' }); }
+  } else if (msg?.type === 'OPEN_SELECTION' && !sender.tab) {
+    void chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => openSelection(tab?.id));
+    respond({ ok: true });
+  } else respond({ ok: false, error: 'Unsupported action' });
+  return false;
 });

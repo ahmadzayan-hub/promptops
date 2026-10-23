@@ -1,10 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { expertPreamble } from "./expert-preamble";
 
 describe("expertPreamble", () => {
-  it("includes today's ISO date", () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 9, 23, 23, 59, 59)); });
+  afterEach(() => vi.useRealTimers());
+  it("includes today's local calendar date, not an assumed UTC date", () => {
     const out = expertPreamble({ locale: "en" });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = "2026-10-23";
     expect(out).toContain(today);
   });
 
@@ -30,9 +32,14 @@ describe("expertPreamble", () => {
   it("does not double-emit on each call (idempotent shape)", () => {
     const a = expertPreamble({ locale: "en" });
     const b = expertPreamble({ locale: "en" });
-    // Same date → same output (within a second, allowing for date rollover)
-    const today = new Date().toISOString().slice(0, 10);
+    const today = "2026-10-23";
     expect(a).toContain(today);
     expect(b).toContain(today);
   });
+  it("updates the date after local midnight", () => {
+    expect(expertPreamble({ locale: "en" })).toContain("2026-10-23");
+    vi.setSystemTime(new Date(2026, 9, 24, 0, 0, 1));
+    expect(expertPreamble({ locale: "en" })).toContain("2026-10-24");
+  });
 });
+

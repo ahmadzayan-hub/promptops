@@ -17,7 +17,7 @@ export const GET = safeRoute(async (req: NextRequest, { params }: { params: Prom
     .eq("org_id", auth.orgId)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "workspace_request_failed" }, { status: 500 });
   if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   // Pull answers separately for clarity
@@ -42,6 +42,7 @@ export const DELETE = safeRoute(async (req: NextRequest, { params }: { params: P
     .delete()
     .eq("id", id)
     .eq("org_id", auth.orgId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "workspace_request_failed" }, { status: 500 });
   return NextResponse.json({ ok: true });
 });
+

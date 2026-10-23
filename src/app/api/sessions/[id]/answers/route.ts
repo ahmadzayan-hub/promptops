@@ -44,10 +44,11 @@ export const POST = safeRoute(async (req: NextRequest, { params }: { params: Pro
   }));
 
   const { error } = await supabase.from("answers").insert(rows);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "workspace_request_failed" }, { status: 500 });
 
   // mark session ready
   await supabase.from("sessions").update({ status: "ready" }).eq("id", id);
 
   return NextResponse.json({ ok: true, count: rows.length });
 });
+

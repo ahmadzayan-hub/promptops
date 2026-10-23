@@ -4,8 +4,10 @@
 
 **Give a rough idea the structure it needs to become a reusable prompt.**
 
-PromptOps guides builders through intent, missing context, clarifying questions
-and model-specific formatting, while retaining sessions and prompt versions.
+PromptOps turns Arabic or English text into an editable, structured prompt.
+The default composer runs locally using explicit rules, not an LLM, and leaves
+missing facts visible. Optional authenticated server workflows retain sessions
+and prompt versions when Supabase and Ollama are correctly configured.
 ZAIan Studio is the name used by its browser, desktop and mobile client packages.
 
 Next.js 15 · React 18 · TypeScript · Supabase · Ollama
@@ -41,9 +43,18 @@ feature claim. Current session states cover intake, clarification, readiness
 and finalization. Approval, benchmark/A-B workflows, release stages, rollback
 and portfolio assurance integration remain separate work.
 
-**Hosting note:** `vercel.json` currently sets `NEXT_PUBLIC_DEMO_MODE=true`.
-A deployed preview therefore must not be presented as the full connected app.
-Do not simply disable it before verifying the real backend and inference path.
+**Current composer:** `/` and `/studio` now use a working, deterministic local
+compiler with no account, inference service or network request required to compose.
+This is not a demo and is not an LLM. The previous forced demo environment flag
+has been removed. Local drafts are not automatically stored or synchronized.
+
+**Deployment is separate from source readiness:** the existing Vercel alias can
+still serve an older build until a deployment of this source is verified. A
+working local compiler does not establish hosted identity, cloud history, or
+Ollama availability. `/api/health` reports those separately.
+
+See [the new product contract](docs/PROMPT-COMPOSER.md) and
+[keyboard integration boundaries](docs/KEYBOARD-INTEGRATION.md).
 
 ## Local setup
 
@@ -56,8 +67,9 @@ npm ci
 cp .env.example .env.local
 ```
 
+You can run the local compiler immediately, without environment variables.
 Configure a dedicated development Supabase project and a reachable Ollama
-service before starting the authenticated workflow. The prompt orchestration
+service only for the optional authenticated workflow. The prompt orchestration
 code calls `src/lib/llm/ollama.ts`; unrelated provider keys in `.env.example`
 do not configure that service.
 
@@ -69,7 +81,7 @@ do not configure that service.
 | `OLLAMA_BASE_URL` | Inference endpoint reachable by the application server |
 | `OLLAMA_MODEL_REASONING`, `OLLAMA_MODEL_FAST`, `OLLAMA_MODEL_REWRITE` | Installed models selected for each pipeline stage |
 | `NEXT_PUBLIC_APP_URL` | This installation’s origin |
-| `EXTENSION_API_KEY` | Existing extension access configuration; never use a shared sample key in production |
+| `EXTENSION_API_KEY` | Legacy server API compatibility only; the current local extension never reads or sends an API key |
 
 Review the [tenant migration checklist](docs/tenant-enrollment-release-review.md)
 before applying schema changes. Do not replay a single old migration over a
@@ -87,8 +99,10 @@ the selected services and are not guaranteed to be zero.
 
 ## Browser, desktop and mobile
 
-- `extension/`: Chrome Manifest V3 source. The release workflow packages a ZIP;
-  store submission is a separate step.
+- `extension/`: Manifest V3 local selected-text composition. Context menu or
+  Alt+Shift+P opens preview; a separate confirmation replaces only the selection,
+  with guarded undo. No background typing capture, host-wide permission or API key.
+  The release workflow packages a ZIP; store submission is separate.
 - `desktop/`: Electron packaging for Linux and Windows. The existing workflow
   does not produce a signed/notarized macOS release.
 - `mobile/`: Capacitor scaffold. Native project generation, signing and device
@@ -138,3 +152,4 @@ session save/reload and provider failure handling need separate acceptance tests
 No repository-wide license file is present in the reviewed source. This README
 does not grant or change a license. Preserve existing notices, assets and client
 packages. Keep changes reviewable and do not publish keys or private prompts.
+

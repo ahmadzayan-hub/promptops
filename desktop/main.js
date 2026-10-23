@@ -107,7 +107,7 @@ app.whenReady().then(() => {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.show();
         mainWindow.focus();
-        mainWindow.loadURL(`${APP_URL}/workspace`);
+        mainWindow.loadURL(`${APP_URL}/studio`);
       }
     });
   } catch { /* shortcut may already be registered */ }
@@ -124,3 +124,4 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });
+

@@ -1,0 +1,6 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({
+  testDir: './tests/browser', timeout: 45000, workers: 1, retries: 0,
+  use: { baseURL: 'http://127.0.0.1:3000', screenshot: 'only-on-failure', trace: 'off' },
+  webServer: { command: 'npm run start -- --hostname 127.0.0.1', url: 'http://127.0.0.1:3000/studio', timeout: 90000, reuseExistingServer: false, env: { NEXT_TELEMETRY_DISABLED: '1' } },
+});

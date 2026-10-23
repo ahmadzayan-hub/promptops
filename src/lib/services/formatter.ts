@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { generateJson } from "@/lib/llm/ollama";
 import { PROMPT_RECONSTRUCTION, MODEL_FORMAT_HINTS } from "@/lib/llm/prompts";
 import { env } from "@/lib/env";
@@ -21,17 +22,9 @@ export async function reconstructPrompt(
     { system: PROMPT_RECONSTRUCTION, model: env.ollamaRewrite, temperature: 0.3 }
   );
 
-  if ("final_prompt" in result && typeof result.final_prompt === "string") {
-    return {
-      final_prompt: result.final_prompt,
-      rationale: result.rationale ?? ""
-    };
-  }
-  // last-resort fallback so the user always gets *something* useful
-  return {
-    final_prompt: skeleton,
-    rationale: "LLM reconstruction failed; returning the structured skeleton."
-  };
+  const validated = z.object({ final_prompt: z.string().trim().min(1).max(30000), rationale: z.string().optional().default("") }).safeParse(result);
+  if (!validated.success) throw new Error("invalid_model_response");
+  return validated.data;
 }
 
 /** Lightweight, per-model post-formatter for the final string. */
@@ -52,3 +45,4 @@ export function postFormatForModel(prompt: string, model: TargetModel): string {
       return prompt;
   }
 }
+

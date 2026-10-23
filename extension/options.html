@@ -1,35 +1,5 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Prompt ZAI@n — Settings</title>
-  <link rel="stylesheet" href="popup.css" />
-</head>
-<body>
-  <h2>Prompt ZAI@n — Settings</h2>
-
-  <label>Host URL</label>
-  <input id="apiBase" type="url" placeholder="https://your-app.vercel.app" />
-
-  <label style="margin-top:8px; display:block;">API key (optional)</label>
-  <input id="apiKey" type="text" placeholder="dev-extension-key" />
-
-  <label style="margin-top:14px; display:flex; align-items:center; gap:8px;">
-    <input id="liveOn" type="checkbox" />
-    <span>Live suggestions while typing on AI sites</span>
-  </label>
-
-  <label style="margin-top:8px; display:flex; align-items:center; gap:8px;">
-    <span>UI locale</span>
-    <select id="locale">
-      <option value="en">English</option>
-      <option value="ar">العربية</option>
-    </select>
-  </label>
-
-  <button id="save" style="margin-top:14px;">Save</button>
-  <p id="status"></p>
-
-  <script src="options.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>PromptOps settings</title><link rel="stylesheet" href="popup.css"></head><body>
+<h1>PromptOps privacy</h1><p>This extension composes locally, only after you select text and invoke it. There is no automatic typing capture, network transmission, shared API key, or automatic send.</p>
+<p>Password, payment and other sensitive fields are excluded. Rich editors may require copying and pasting manually. Review each result before confirming replacement.</p>
+<p>Existing server API integrations remain in the repository, but this extension no longer uses stored API keys. Legacy stored values are not read or sent.</p>
+<a id="studio" target="_blank" rel="noreferrer">Open PromptOps Studio</a><script src="options.js"></script></body></html>

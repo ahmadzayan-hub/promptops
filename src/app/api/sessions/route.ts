@@ -46,7 +46,7 @@ export const POST = safeRoute(async (req: NextRequest) => {
       .single();
 
     if (error || !session) {
-      return NextResponse.json({ error: "create_failed", detail: error?.message }, { status: 500 });
+      return NextResponse.json({ error: "create_failed" }, { status: 500 });
     }
 
     if (quick) {
@@ -119,6 +119,7 @@ export const GET = safeRoute(async (req: NextRequest) => {
     .eq("org_id", auth.orgId)
     .order("created_at", { ascending: false })
     .limit(50);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "workspace_request_failed" }, { status: 500 });
   return NextResponse.json({ sessions: data });
 });
+

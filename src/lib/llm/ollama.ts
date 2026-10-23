@@ -41,7 +41,7 @@ export async function generate(prompt: string, opts: OllamaOptions = {}): Promis
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: opts.signal
+      signal: opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000)
     });
   } catch (e) {
     // Network-level failure (refused, DNS, timeout) · surface a clean error
@@ -52,6 +52,7 @@ export async function generate(prompt: string, opts: OllamaOptions = {}): Promis
     throw new Error(`Ollama error ${res.status}: ${await res.text()}`);
   }
   const data = (await res.json()) as OllamaResponse;
+  if (typeof data?.response !== "string" || !data.response.trim()) throw new Error("ollama_invalid_response");
   return data.response.trim();
 }
 
@@ -76,3 +77,4 @@ export async function generateJson<T = unknown>(
     return { raw };
   }
 }
+

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { postFormatForModel } from "./formatter";
 
 describe("postFormatForModel", () => {
@@ -24,4 +24,17 @@ describe("postFormatForModel", () => {
     expect(postFormatForModel("hello", "chatgpt")).toBe("hello");
     expect(postFormatForModel("hello", "generic")).toBe("hello");
   });
+});
+
+
+vi.mock("@/lib/llm/ollama", () => ({ generateJson: vi.fn() }));
+import { generateJson } from "@/lib/llm/ollama";
+import { reconstructPrompt } from "./formatter";
+it.each([null, {}, { raw: "not JSON" }, { final_prompt: "" }, { final_prompt: "  " }, { final_prompt: 10 }])("rejects invalid model output without relabelling a skeleton as AI %#", async output => {
+  vi.mocked(generateJson).mockResolvedValueOnce(output as never);
+  await expect(reconstructPrompt({ rawPrompt: "write an email", intent: "writing", qa: [] })).rejects.toThrow("invalid_model_response");
+});
+it("returns only validated model output", async () => {
+  vi.mocked(generateJson).mockResolvedValueOnce({ final_prompt: "A verified response shape", rationale: "Structured by model" });
+  await expect(reconstructPrompt({ rawPrompt: "test", intent: "other", qa: [] })).resolves.toEqual({ final_prompt: "A verified response shape", rationale: "Structured by model" });
 });
