@@ -5,7 +5,6 @@
   "version": "0.20.0",
   "description": "Turn selected text into a structured prompt locally. Preview, confirm replacement and undo. No background typing capture.",
   "permissions": [
-    "storage",
     "activeTab",
     "scripting",
     "contextMenus"

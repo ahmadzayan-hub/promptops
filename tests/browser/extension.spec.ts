@@ -84,3 +84,22 @@ test('undo refuses to overwrite a later edit', async () => {
   await expect(page.locator('textarea')).toHaveValue('later edit');
   await page.keyboard.press('Escape'); await page.close();
 });
+
+test('contenteditable fields fail closed until editor selection contract is verified', async () => {
+  const page = await fixture('<div contenteditable="true">write an email</div>');
+  await page.locator('[contenteditable]').focus();
+  await worker.evaluate(async () => { const api = (globalThis as any).chrome; const tabs = await api.tabs.query({ url: 'http://127.0.0.1:3000/*' }); await api.scripting.executeScript({ target: { tabId: tabs[tabs.length - 1].id }, files: ['content.js'] }); });
+  await expect(page.locator('#promptops-review')).toHaveCount(1);
+  await page.keyboard.press('Enter'); await expect(page.locator('#promptops-review')).toHaveCount(0);
+  await expect(page.locator('[contenteditable]')).toHaveText('write an email'); await page.close();
+});
+
+test('controlled editor reverting the input is not treated as an applied change', async () => {
+  const page = await fixture('<textarea>before write an email after</textarea>');
+  await page.locator('textarea').evaluate(el => el.addEventListener('input', () => { (el as HTMLTextAreaElement).value = 'controlled editor kept this'; }));
+  await inject(page); await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  await expect(page.locator('textarea')).toHaveValue('controlled editor kept this');
+  // Both replacement and undo are disabled; Tab advances to Close, then Enter dismisses.
+  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  await expect(page.locator('#promptops-review')).toHaveCount(0); await page.close();
+});

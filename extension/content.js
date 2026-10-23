@@ -6,7 +6,6 @@
   if (globalThis.__promptopsClose) globalThis.__promptopsClose();
   const url = location.href;
   const isText = target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type === 'text');
-  const isPlainEditable = target instanceof HTMLElement && target.isContentEditable && target.childNodes.length === 1 && target.firstChild?.nodeType === Node.TEXT_NODE;
   const sensitive = el => {
     if (!(el instanceof HTMLElement)) return true;
     const meta = ['type','autocomplete','name','id','aria-label','placeholder','data-sensitive'].map(k => el.getAttribute(k) || '').join(' ') + ' ' + [...(el.labels || [])].map(label => label.textContent).join(' ');
@@ -14,26 +13,18 @@
     return /password|passcode|secret|token|api.?key|credit|debit|card|cvc|cvv|cc-|payment|iban|account.?number|routing|one.time|otp|pin\b|كلمة.?المرور|بطاقة|رمز.?التحقق/i.test(meta) || el.closest('[data-sensitive="true"], [autocomplete^="cc-"]') !== null;
   };
   // Deny before reading any value from sensitive or unsupported fields.
-  if ((!isText && !isPlainEditable) || sensitive(target) || target.disabled || target.readOnly) {
+  if (!isText || sensitive(target) || target.disabled || target.readOnly) {
     showMessage('Select text in a non-sensitive text field. Passwords, payment fields and rich editors are excluded. / حدد نصًا في حقل عادي غير حساس.');
     return;
   }
-  let start, end, node;
-  if (isText) { start = target.selectionStart; end = target.selectionEnd; }
-  else {
-    const selection = window.getSelection();
-    if (!selection?.rangeCount) return;
-    const range = selection.getRangeAt(0); node = target.firstChild;
-    if (range.startContainer !== node || range.endContainer !== node) { showMessage('Select text within one plain-text field.'); return; }
-    start = range.startOffset; end = range.endOffset;
-  }
-  const value = () => isText ? target.value : node?.data ?? '';
+  const start = target.selectionStart, end = target.selectionEnd;
+  const value = () => target.value;
   const original = value().slice(start, end);
   const length = value().length;
   if (!original.trim() || original.length > 8000) { showMessage('Select between 1 and 8,000 characters first. / حدد من ١ إلى ٨٠٠٠ حرف أولًا.'); return; }
   let stale = false, applied = false, currentText = original, currentLength = length;
   let internal = false;
-  const invalidated = () => { if (!internal) stale = true; };
+  const invalidated = () => { if (!internal) { stale = true; status.textContent = 'The field changed. Start a new preview. / تغيّر الحقل؛ ابدأ معاينة جديدة.'; replace.disabled = true; undo.disabled = true; } };
   // Only an active, visible preview is observed, never typed content.
   target.addEventListener('input', invalidated);
   target.addEventListener('pointerdown', invalidated);
@@ -43,7 +34,7 @@
   const ar = /[\u0600-\u06ff]/u.test(original);
   panel.dir = ar ? 'rtl' : 'ltr';
   const heading = document.createElement('h2'); heading.textContent = ar ? 'راجع النص قبل الاستبدال' : 'Review before replacing'; panel.append(heading);
-  const note = document.createElement('p'); note.textContent = ar ? 'قواعد محلية، وليست نموذج ذكاء اصطناعي. النص المحدد فقط؛ لا إرسال أو حفظ سحابي.' : 'Local rules, not an AI model. Selected text only; no network or cloud storage.'; panel.append(note);
+  const note = document.createElement('p'); note.textContent = ar ? 'قواعد محلية وليست نموذجًا. الإضافة لا ترسل النص، لكن الاستبدال قد يشغّل الحفظ التلقائي المعتاد للموقع.' : 'Local rules, not an AI model. The extension sends no text. Replacement may trigger the site’s normal autosave.'; panel.append(note);
   const originalLabel = document.createElement('strong'); originalLabel.textContent = ar ? 'الأصلي' : 'Original'; panel.append(originalLabel);
   const before = document.createElement('pre'); before.textContent = original; panel.append(before);
   const preview = document.createElement('textarea'); preview.rows = 10; preview.maxLength = 30000; preview.setAttribute('aria-label', ar ? 'معاينة قابلة للتعديل' : 'Editable preview'); panel.append(preview);
@@ -57,30 +48,34 @@
   replace.disabled = true;
   function matches() {
     return !stale && target.isConnected && location.href === url && !sensitive(target) && !target.disabled && !target.readOnly &&
-      (isText ? target.selectionStart === start && target.selectionEnd === start + currentText.length : target.firstChild === node) && value().length === currentLength && value().slice(start, start + currentText.length) === currentText;
+      (target.selectionStart === start && target.selectionEnd === start + currentText.length) && value().length === currentLength && value().slice(start, start + currentText.length) === currentText;
   }
   function write(text) {
     if (isText && target.maxLength >= 0 && currentLength - currentText.length + text.length > target.maxLength) { status.textContent = ar ? 'النص أطول من الحد المسموح لهذا الحقل. اختصر المعاينة أو استخدم النسخ اليدوي.' : 'The result exceeds this field’s character limit. Shorten the preview or copy manually.'; return false; }
     if (!matches()) { status.textContent = ar ? 'تغيّر الحقل. أعد تحديد النص وابدأ من جديد.' : 'The field changed. Select the text again and start a new preview.'; replace.disabled = true; undo.disabled = true; return false; }
     internal = true; observer.disconnect();
-    if (isText) {
+    {
       const next = value().slice(0, start) + text + value().slice(start + currentText.length);
       const proto = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
       Object.getOwnPropertyDescriptor(proto, 'value').set.call(target, next);
       target.setSelectionRange(start, start + text.length);
-    } else { node.replaceData(start, currentText.length, text); }
+    }
     currentLength += text.length - currentText.length; currentText = text;
     target.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText', data: text }));
     internal = false;
     observer.observe(target, { childList: true, characterData: true, subtree: true, attributes: true });
     // A controlled editor can replace/revert its DOM. Fail closed on later actions.
-    if (!target.isConnected || value().slice(start, start + text.length) !== text) stale = true;
+    if (!target.isConnected || target.disabled || target.readOnly || sensitive(target) || value().length !== currentLength || value().slice(start, start + text.length) !== text) {
+      stale = true; replace.disabled = true; undo.disabled = true;
+      status.textContent = ar ? 'المحرر لم يحتفظ بالتغيير. تحقق من الحقل واستخدم النسخ اليدوي.' : 'The editor did not preserve the change. Check the field and use manual copy instead.';
+      return false;
+    }
     return true;
   }
   replace.onclick = event => {
     if (!event.isTrusted) return;
     if (applied || !preview.value.trim()) return;
-    if (write(preview.value)) { applied = true; replace.disabled = true; preview.disabled = true; undo.disabled = false; status.textContent = ar ? 'استُبدل النص المحدد فقط. لم يُرسل شيء.' : 'Only the selected text was replaced. Nothing was sent.'; }
+    if (write(preview.value)) { applied = true; replace.disabled = true; preview.disabled = true; undo.disabled = false; status.textContent = ar ? 'استُبدل النص المحدد فقط. الإضافة لم تنفّذ أي طلب شبكي.' : 'Only the selected text was replaced. The extension made no network request.'; }
   };
   undo.onclick = event => {
     if (!event.isTrusted) return;

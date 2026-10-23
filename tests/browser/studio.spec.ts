@@ -86,3 +86,14 @@ test('compiler remains usable with blocked preference storage', async ({ page })
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await expect(page.locator('#prompt-result')).toHaveValue(/hello/);
 });
+
+test('manual changes to a saved server version are labelled unsynced', async ({ page }) => {
+  await page.goto('/studio'); await page.locator('#raw').fill('write an email');
+  await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
+  await page.route('**/api/sessions', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ session: { id: 'fixture', prompt_versions: [{ version: 1, final_prompt: 'Model output for review' }] } }) }));
+  await page.getByText('Use my connected workspace', { exact: true }).click(); await page.getByRole('button', { name: 'Send & refine with Ollama' }).click();
+  await expect(page.locator('#prompt-result')).toHaveValue('Model output for review');
+  await page.locator('#prompt-result').fill('My later edit');
+  await expect(page.getByText('Server version saved · your later edits are local, not synced').first()).toBeVisible();
+  await expect(page.getByText('Original wording retained without changes')).toHaveCount(0);
+});

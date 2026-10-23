@@ -4,8 +4,8 @@
 
 The existing Manifest V3 package now provides an explicit selected-text path:
 
-1. Select 1–8,000 characters in a normal textarea, text input, or single-text-node
-   contenteditable field.
+1. Select 1–8,000 characters in a normal textarea or text input. Rich/contenteditable
+   editors use the manual paste/copy popup instead.
 2. Choose **PromptOps: review selected text** from the context menu, or use
    **Alt+Shift+P**. Alt+P opens the manual-paste popup.
 3. Inspect the original and editable structured preview.
@@ -15,8 +15,9 @@ The existing Manifest V3 package now provides an explicit selected-text path:
 The compiler runs inside the extension. There are no typing-triggered requests,
 clipboard reads, background key capture, persistent global tokens or automatic
 message submission. Only temporary `activeTab` access is requested; there are no
-host-wide permissions or automatic content scripts. No text is sent to the web
-app. Legacy stored API settings are not read or transmitted.
+host-wide permissions or automatic content scripts. No text is sent by the extension to the web
+app. Confirming replacement dispatches a normal input event, so the host site
+may perform its ordinary autosave; the preview discloses this. Legacy stored API settings are not read or transmitted.
 
 Sensitive fields are rejected before reading their values: password/non-text
 inputs, numeric input modes, known payment/credential/OTP metadata and labels,
@@ -28,7 +29,7 @@ boundary against a malicious page or other extension. Confirmation must be a
 trusted user event. The target must remain connected, nonsensitive and editable;
 selection offsets, length and selected text must match. Input, pointer edits or
 DOM changes invalidate the preview. Undo refuses to overwrite subsequent edits.
-Unsupported rich editors fail closed and can use manual paste/copy instead.
+Contenteditable and rich editors fail closed and can use manual paste/copy instead.
 
 ### Verification boundary
 

@@ -78,7 +78,7 @@ export const POST = safeRoute(async (req: NextRequest, { params }: { params: Pro
       })
       .select("*")
       .single();
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    if (insErr) return NextResponse.json({ error: "version_save_failed" }, { status: 500 });
 
     await supabase
       .from("sessions")
@@ -90,3 +90,4 @@ export const POST = safeRoute(async (req: NextRequest, { params }: { params: Pro
     return handleError(e);
   }
 });
+
