@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   NEXT_TELEMETRY_DISABLED: "1"
 
@@ -34,6 +37,9 @@ jobs:
       - name: Client endpoints
         run: node scripts/check-client-endpoints.mjs
 
+      - name: Shared compiler parity
+        run: npm run check:composer
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -49,3 +55,10 @@ jobs:
 
       - name: Build
         run: npm run build
+
+
+      - name: Install Chromium for isolated browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser and selected-text regression tests
+        run: npm run test:browser

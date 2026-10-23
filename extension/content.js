@@ -1,266 +1,125 @@
-// ZAIan Studio — content script
-// Two enhancements per supported AI site:
-//
-//   1. ✨ Enhance button next to the composer — full polish flow
-//      (existing behaviour, kept for backwards compatibility).
-//
-//   2. Live "Grammarly-style" suggestion bubble that appears above the
-//      composer while the user types. Suggestions come from POSTing the
-//      current draft to /api/v1/suggest on the configured ZAIan Studio
-//      host, debounced 350 ms. Tapping a chip appends the suggestion's
-//      markdown to the composer — never replaces what the user wrote.
-//
-// Settings (host + auto-suggest enabled) are read from chrome.storage.
-
-(function () {
-  const HOST = location.hostname;
-  const TARGET_MODEL = (() => {
-    if (HOST.includes("openai") || HOST.includes("chatgpt")) return "chatgpt";
-    if (HOST.includes("claude"))                              return "claude";
-    if (HOST.includes("copilot"))                             return "copilot";
-    if (HOST.includes("gemini") || HOST.includes("bard"))     return "gemini";
-    return "generic";
-  })();
-
-  const DEFAULT_BASE = "https://promptops-kappa.vercel.app";
-
-  let cachedBase = DEFAULT_BASE;
-  let liveOn = true;          // user-toggleable
-  let uiLocale = "en";
-
-  // Pull settings from extension storage (set in options.html)
-  try {
-    chrome.storage?.local?.get(
-      ["base_url", "live_suggestions", "locale"],
-      (s) => {
-        if (s?.base_url)                            cachedBase = s.base_url;
-        if (typeof s?.live_suggestions === "boolean") liveOn = s.live_suggestions;
-        if (s?.locale)                              uiLocale = s.locale;
-      }
-    );
-  } catch { /* ignore — extension storage may not be available in all contexts */ }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Composer detection
-  // ───────────────────────────────────────────────────────────────────────────
-  function findInput() {
-    return (
-      document.querySelector('textarea[data-id="root"]') ||
-      document.querySelector('textarea[placeholder*="Message" i]') ||
-      document.querySelector('textarea[placeholder*="Send" i]') ||
-      document.querySelector('div[contenteditable="true"]') ||
-      document.querySelector("textarea")
-    );
+// Injected only by a context-menu command or shortcut. No typing listeners,
+// network calls, clipboard reads, auto-send or document-wide input scanning.
+(() => {
+  const STUDIO_URL = 'https://promptops-kappa.vercel.app';
+  const target = document.activeElement;
+  if (globalThis.__promptopsClose) globalThis.__promptopsClose();
+  const url = location.href;
+  const isText = target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type === 'text');
+  const isPlainEditable = target instanceof HTMLElement && target.isContentEditable && target.childNodes.length === 1 && target.firstChild?.nodeType === Node.TEXT_NODE;
+  const sensitive = el => {
+    if (!(el instanceof HTMLElement)) return true;
+    const meta = ['type','autocomplete','name','id','aria-label','placeholder','data-sensitive'].map(k => el.getAttribute(k) || '').join(' ') + ' ' + [...(el.labels || [])].map(label => label.textContent).join(' ');
+    if (el.getAttribute('inputmode') === 'numeric' || el.getAttribute('inputmode') === 'decimal') return true;
+    return /password|passcode|secret|token|api.?key|credit|debit|card|cvc|cvv|cc-|payment|iban|account.?number|routing|one.time|otp|pin\b|كلمة.?المرور|بطاقة|رمز.?التحقق/i.test(meta) || el.closest('[data-sensitive="true"], [autocomplete^="cc-"]') !== null;
+  };
+  // Deny before reading any value from sensitive or unsupported fields.
+  if ((!isText && !isPlainEditable) || sensitive(target) || target.disabled || target.readOnly) {
+    showMessage('Select text in a non-sensitive text field. Passwords, payment fields and rich editors are excluded. / حدد نصًا في حقل عادي غير حساس.');
+    return;
   }
-  function readValue(el)  { return el.tagName === "TEXTAREA" ? el.value : el.innerText; }
-  function writeValue(el, value) {
-    if (el.tagName === "TEXTAREA") {
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-      setter.call(el, value);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-    } else {
-      el.innerText = value;
-      el.dispatchEvent(new InputEvent("input", { bubbles: true }));
-    }
+  let start, end, node;
+  if (isText) { start = target.selectionStart; end = target.selectionEnd; }
+  else {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+    const range = selection.getRangeAt(0); node = target.firstChild;
+    if (range.startContainer !== node || range.endContainer !== node) { showMessage('Select text within one plain-text field.'); return; }
+    start = range.startOffset; end = range.endOffset;
   }
-  function appendValue(el, suffix) {
-    const cur = readValue(el);
-    writeValue(el, (cur || "") + suffix);
+  const value = () => isText ? target.value : node?.data ?? '';
+  const original = value().slice(start, end);
+  const length = value().length;
+  if (!original.trim() || original.length > 8000) { showMessage('Select between 1 and 8,000 characters first. / حدد من ١ إلى ٨٠٠٠ حرف أولًا.'); return; }
+  let stale = false, applied = false, currentText = original, currentLength = length;
+  let internal = false;
+  const invalidated = () => { if (!internal) stale = true; };
+  // Only an active, visible preview is observed, never typed content.
+  target.addEventListener('input', invalidated);
+  target.addEventListener('pointerdown', invalidated);
+  const observer = new MutationObserver(() => { if (!internal) stale = true; });
+  observer.observe(target, { childList: true, characterData: true, subtree: true, attributes: true });
+  const { host, root, panel, close } = makePanel(() => { target.removeEventListener('input', invalidated); target.removeEventListener('pointerdown', invalidated); observer.disconnect(); });
+  const ar = /[\u0600-\u06ff]/u.test(original);
+  panel.dir = ar ? 'rtl' : 'ltr';
+  const heading = document.createElement('h2'); heading.textContent = ar ? 'راجع النص قبل الاستبدال' : 'Review before replacing'; panel.append(heading);
+  const note = document.createElement('p'); note.textContent = ar ? 'قواعد محلية، وليست نموذج ذكاء اصطناعي. النص المحدد فقط؛ لا إرسال أو حفظ سحابي.' : 'Local rules, not an AI model. Selected text only; no network or cloud storage.'; panel.append(note);
+  const originalLabel = document.createElement('strong'); originalLabel.textContent = ar ? 'الأصلي' : 'Original'; panel.append(originalLabel);
+  const before = document.createElement('pre'); before.textContent = original; panel.append(before);
+  const preview = document.createElement('textarea'); preview.rows = 10; preview.maxLength = 30000; preview.setAttribute('aria-label', ar ? 'معاينة قابلة للتعديل' : 'Editable preview'); panel.append(preview);
+  const status = document.createElement('p'); status.setAttribute('role', 'status'); panel.append(status);
+  const row = document.createElement('div'); row.className = 'actions'; panel.append(row);
+  const replace = button(ar ? 'وافق واستبدل المحدد' : 'Confirm replacement');
+  const undo = button(ar ? 'تراجع' : 'Undo'); undo.disabled = true;
+  const cancel = button(ar ? 'إغلاق' : 'Close');
+  row.append(replace, undo, cancel);
+  cancel.onclick = close;
+  replace.disabled = true;
+  function matches() {
+    return !stale && target.isConnected && location.href === url && !sensitive(target) && !target.disabled && !target.readOnly &&
+      (isText ? target.selectionStart === start && target.selectionEnd === start + currentText.length : target.firstChild === node) && value().length === currentLength && value().slice(start, start + currentText.length) === currentText;
   }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // ✨ Enhance button (full pipeline) — unchanged behaviour
-  // ───────────────────────────────────────────────────────────────────────────
-  function ensureEnhanceButton(el) {
-    if (el.dataset.zaianEnhanceInjected === "1") return;
-    el.dataset.zaianEnhanceInjected = "1";
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "po-enhance-btn";
-    btn.textContent = "✨ Enhance";
-    btn.title = "Polish with ZAIan Studio";
-
-    const wrap = document.createElement("div");
-    wrap.className = "po-wrap";
-    wrap.appendChild(btn);
-    el.parentElement?.appendChild(wrap);
-
-    btn.addEventListener("click", async () => {
-      const raw = readValue(el).trim();
-      if (raw.length < 3) return;
-      btn.disabled = true;
-      btn.textContent = "Thinking…";
-      try {
-        const resp = await chrome.runtime.sendMessage({
-          type: "ENHANCE",
-          payload: { raw_prompt: raw, target_model: TARGET_MODEL }
-        });
-        if (!resp?.ok) throw new Error(resp?.error || "enhance failed");
-        writeValue(el, resp.data.final_prompt);
-        btn.textContent = "✓ Enhanced";
-      } catch (e) {
-        console.error("[ZAIan Studio]", e);
-        btn.textContent = "Error";
-      } finally {
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = "✨ Enhance";
-        }, 1500);
-      }
-    });
+  function write(text) {
+    if (isText && target.maxLength >= 0 && currentLength - currentText.length + text.length > target.maxLength) { status.textContent = ar ? 'النص أطول من الحد المسموح لهذا الحقل. اختصر المعاينة أو استخدم النسخ اليدوي.' : 'The result exceeds this field’s character limit. Shorten the preview or copy manually.'; return false; }
+    if (!matches()) { status.textContent = ar ? 'تغيّر الحقل. أعد تحديد النص وابدأ من جديد.' : 'The field changed. Select the text again and start a new preview.'; replace.disabled = true; undo.disabled = true; return false; }
+    internal = true; observer.disconnect();
+    if (isText) {
+      const next = value().slice(0, start) + text + value().slice(start + currentText.length);
+      const proto = target instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value').set.call(target, next);
+      target.setSelectionRange(start, start + text.length);
+    } else { node.replaceData(start, currentText.length, text); }
+    currentLength += text.length - currentText.length; currentText = text;
+    target.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText', data: text }));
+    internal = false;
+    observer.observe(target, { childList: true, characterData: true, subtree: true, attributes: true });
+    // A controlled editor can replace/revert its DOM. Fail closed on later actions.
+    if (!target.isConnected || value().slice(start, start + text.length) !== text) stale = true;
+    return true;
   }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Live suggestions bubble (Grammarly-style)
-  // ───────────────────────────────────────────────────────────────────────────
-  let suggestEl   = null;
-  let suggestTmr  = null;
-  let lastDraft   = "";
-  let dismissed   = new Set();
-
-  function ensureBubble(anchor) {
-    if (suggestEl) return suggestEl;
-    suggestEl = document.createElement("div");
-    suggestEl.className = "po-bubble";
-    suggestEl.setAttribute("role", "region");
-    suggestEl.setAttribute("aria-label", "ZAIan Studio suggestions");
-    suggestEl.style.display = "none";
-    document.body.appendChild(suggestEl);
-    positionBubble(anchor);
-    window.addEventListener("scroll",  () => positionBubble(anchor), { passive: true });
-    window.addEventListener("resize",  () => positionBubble(anchor));
-    return suggestEl;
-  }
-
-  function positionBubble(anchor) {
-    if (!suggestEl || !anchor) return;
-    const r = anchor.getBoundingClientRect();
-    const top  = Math.max(8, r.top + window.scrollY - 8 - suggestEl.offsetHeight);
-    const left = Math.min(
-      window.innerWidth - 16 - suggestEl.offsetWidth,
-      Math.max(8, r.left + window.scrollX)
-    );
-    suggestEl.style.top  = top + "px";
-    suggestEl.style.left = left + "px";
-  }
-
-  function renderBubble(suggestions, el) {
-    if (!suggestEl) return;
-    if (!suggestions.length) { suggestEl.style.display = "none"; return; }
-
-    suggestEl.innerHTML = "";
-
-    const head = document.createElement("div");
-    head.className = "po-bubble-head";
-    head.textContent = "✨ Quick suggestions";
-    suggestEl.appendChild(head);
-
-    suggestions.forEach((s) => {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "po-bubble-chip";
-      chip.title = s.preview;
-      chip.textContent = s.label;
-      chip.addEventListener("click", () => {
-        appendValue(el, s.append);
-        dismissed.add(s.id);
-        scheduleSuggest(el);
-      });
-
-      const x = document.createElement("button");
-      x.type = "button";
-      x.className = "po-bubble-x";
-      x.textContent = "×";
-      x.title = "Dismiss";
-      x.addEventListener("click", (e) => {
-        e.stopPropagation();
-        dismissed.add(s.id);
-        scheduleSuggest(el);
-      });
-
-      const grp = document.createElement("span");
-      grp.className = "po-bubble-grp";
-      grp.appendChild(chip);
-      grp.appendChild(x);
-      suggestEl.appendChild(grp);
-    });
-
-    suggestEl.style.display = "flex";
-    positionBubble(el);
-  }
-
-  async function fetchSuggestions(draft) {
-    try {
-      const res = await fetch(`${cachedBase}/api/v1/suggest`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft, target_model: TARGET_MODEL, locale: uiLocale })
-      });
-      if (!res.ok) return [];
-      const j = await res.json();
-      return Array.isArray(j?.suggestions) ? j.suggestions : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function scheduleSuggest(el) {
-    if (!liveOn) return;
-    if (suggestTmr) clearTimeout(suggestTmr);
-    suggestTmr = setTimeout(async () => {
-      const draft = readValue(el).trim();
-      if (draft.length < 12) {
-        if (suggestEl) suggestEl.style.display = "none";
-        return;
-      }
-      if (draft === lastDraft) return;
-      lastDraft = draft;
-      const list = await fetchSuggestions(draft);
-      const visible = list.filter((s) => !dismissed.has(s.id)).slice(0, 3);
-      ensureBubble(el);
-      renderBubble(visible, el);
-    }, 350);
-  }
-
-  function ensureLiveSuggestions(el) {
-    if (el.dataset.zaianLiveInjected === "1") return;
-    el.dataset.zaianLiveInjected = "1";
-
-    el.addEventListener("input",  () => scheduleSuggest(el));
-    el.addEventListener("focus",  () => scheduleSuggest(el));
-    el.addEventListener("blur",   () => {
-      // Hide after a beat so the user can click a chip
-      setTimeout(() => {
-        if (suggestEl && document.activeElement !== el && !suggestEl.contains(document.activeElement)) {
-          suggestEl.style.display = "none";
-        }
-      }, 200);
-    });
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // Boot — observe DOM changes (AI sites are SPAs)
-  // ───────────────────────────────────────────────────────────────────────────
-  function attach() {
-    const el = findInput();
-    if (!el) return;
-    ensureEnhanceButton(el);
-    ensureLiveSuggestions(el);
-  }
-
-  const observer = new MutationObserver(attach);
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  attach();
-
-  // Listen for live-toggle messages from the popup
-  try {
-    chrome.runtime?.onMessage?.addListener((msg) => {
-      if (msg?.type === "TOGGLE_LIVE_SUGGESTIONS") {
-        liveOn = !!msg.value;
-        if (!liveOn && suggestEl) suggestEl.style.display = "none";
+  replace.onclick = event => {
+    if (!event.isTrusted) return;
+    if (applied || !preview.value.trim()) return;
+    if (write(preview.value)) { applied = true; replace.disabled = true; preview.disabled = true; undo.disabled = false; status.textContent = ar ? 'استُبدل النص المحدد فقط. لم يُرسل شيء.' : 'Only the selected text was replaced. Nothing was sent.'; }
+  };
+  undo.onclick = event => {
+    if (!event.isTrusted) return;
+    if (applied && write(original)) { applied = false; undo.disabled = true; replace.disabled = false; preview.disabled = false; status.textContent = ar ? 'استُعيد النص الأصلي.' : 'Original selection restored.'; }
+  };
+  preview.addEventListener('input', () => { replace.disabled = applied || !preview.value.trim(); });
+  chrome.runtime.sendMessage({ type: 'ENHANCE', payload: { raw_prompt: original } }).then(response => {
+    if (!host.isConnected) return;
+    if (!response?.ok || typeof response.data?.final_prompt !== 'string') { status.textContent = 'Could not compose this selection.'; return; }
+    preview.value = response.data.final_prompt; replace.disabled = false; preview.focus();
+  }).catch(() => { status.textContent = 'Extension unavailable. Close and try again.'; });
+  // Keep the canonical app link available without sending any selected text.
+  const link = document.createElement('a'); link.href = STUDIO_URL; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = 'PromptOps Studio'; panel.append(link);
+  function button(label) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; return b; }
+  function makePanel(cleanup = () => {}) {
+    const host = document.createElement('div'); host.id = 'promptops-review';
+    // Closed shadow tree isolates text from ordinary page scripts; not a
+    // security boundary against a malicious site or browser extension.
+    const root = host.attachShadow({ mode: 'closed' });
+    const style = document.createElement('style'); style.textContent = ':host{position:fixed;inset:0;z-index:2147483647;background:#00150d88;display:grid;place-items:center;font:14px system-ui;color:#152a28}*{box-sizing:border-box}section{background:#fff;border:1px solid #dce6df;border-radius:18px;padding:22px;width:min(620px,94vw);max-height:90vh;overflow:auto;box-shadow:0 20px 70px #0004}h2{font-size:20px;margin:0 0 12px}p{line-height:1.6;color:#586d69;font-size:12px}pre{white-space:pre-wrap;max-height:100px;overflow:auto;background:#eff6f0;padding:12px;border-radius:8px}textarea{width:100%;resize:vertical;border:1px solid #b3c8ba;border-radius:10px;padding:12px;font:13px/1.7 system-ui}button{padding:12px;border:1px solid #b3c8ba;border-radius:9px;background:#fff;color:#152a28;cursor:pointer}button:first-child{background:#176b50;color:white}button:disabled{opacity:.45;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}a{color:#176b50}button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid #67bc99;outline-offset:2px}';
+    const panel = document.createElement('section'); panel.setAttribute('role','dialog'); panel.setAttribute('aria-modal','true'); panel.setAttribute('aria-label','PromptOps review'); panel.tabIndex = -1;
+    root.append(style, panel); document.documentElement.append(host);
+    const close = () => { cleanup(); host.remove(); if (globalThis.__promptopsClose === close) delete globalThis.__promptopsClose; if (target?.isConnected) target.focus(); };
+    globalThis.__promptopsClose = close;
+    root.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      if (e.key === 'Tab') {
+        const items = [...panel.querySelectorAll('button:not(:disabled), textarea:not(:disabled), a[href]')];
+        const first = items[0], last = items.at(-1);
+        if (e.shiftKey && root.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && root.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
     });
-  } catch { /* ignore */ }
+    panel.focus();
+    return { host, root, panel, close };
+  }
+  function showMessage(text) {
+    const { panel, close } = makePanel();
+    const p = document.createElement('p'); p.textContent = text; p.setAttribute('role','status');
+    const b = document.createElement('button'); b.type='button'; b.textContent='Close / إغلاق'; b.onclick=close; panel.append(p,b); b.focus();
+  }
 })();

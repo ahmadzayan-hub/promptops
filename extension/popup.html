@@ -1,29 +1,7 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Prompt Orchestrator</title>
-  <link rel="stylesheet" href="popup.css" />
-</head>
-<body>
-  <header>
-    <strong>Prompt Orchestrator</strong>
-    <a id="settings" href="options.html" target="_blank">Settings</a>
-  </header>
-  <textarea id="raw" placeholder="Paste your raw prompt here…" rows="6"></textarea>
-  <div class="row">
-    <select id="model">
-      <option value="generic">Generic</option>
-      <option value="chatgpt">ChatGPT</option>
-      <option value="claude">Claude</option>
-      <option value="copilot">Copilot</option>
-      <option value="gemini">Gemini</option>
-    </select>
-    <button id="go">Enhance</button>
-  </div>
-  <pre id="out" hidden></pre>
-  <button id="copy" hidden>Copy</button>
-  <p id="err" class="err"></p>
-  <script src="popup.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>PromptOps</title><link rel="stylesheet" href="popup.css"></head><body>
+<header><strong>PromptOps · ZAIan Studio</strong><a href="options.html" target="_blank">Settings</a></header>
+<p>Local rules, not an AI model. No text is sent or saved.</p><button id="selection" type="button">Review selected text · Alt+Shift+P</button>
+<label for="raw">Or paste your idea / أو الصق فكرتك</label><textarea id="raw" dir="auto" maxlength="8000" rows="5"></textarea>
+<button id="go" type="button">Build prompt / صِغ البرومبت</button>
+<label for="out">Editable preview</label><textarea id="out" dir="auto" rows="10" hidden></textarea>
+<button id="copy" type="button" hidden>Copy</button><p id="err" role="status"></p><script src="popup.js"></script></body></html>

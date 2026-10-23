@@ -51,3 +51,5 @@ pre {
   overflow: auto;
 }
 .err { color: #be123c; min-height: 1em; }
+
+body{width:380px;max-width:100%;padding:18px;background:#f5f8f3;color:#152a28;font:13px/1.6 system-ui}textarea{box-sizing:border-box;width:100%;padding:12px;border:1px solid #bccfc3;border-radius:10px;font:14px/1.7 system-ui;background:#fff;color:#152a28;resize:vertical}button{margin:8px 0;padding:10px 12px;background:#176b50;color:#fff;border:0;border-radius:9px;cursor:pointer}button:disabled{opacity:.45}label{display:block;margin-top:12px}a{color:#176b50}button:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #67bc99;outline-offset:2px}

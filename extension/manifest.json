@@ -1,22 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "ZAIan Studio",
+  "name": "PromptOps \u00b7 ZAIan Studio",
   "short_name": "ZAIan",
-  "version": "0.15.0",
-  "description": "Polish any AI prompt for ChatGPT, Claude, Copilot, Gemini. Free, EN/AR. From the UAE 🇦🇪 to the world.",
+  "version": "0.20.0",
+  "description": "Turn selected text into a structured prompt locally. Preview, confirm replacement and undo. No background typing capture.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
     "contextMenus"
-  ],
-  "host_permissions": [
-    "https://chat.openai.com/*",
-    "https://chatgpt.com/*",
-    "https://claude.ai/*",
-    "https://copilot.microsoft.com/*",
-    "https://gemini.google.com/*",
-    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -33,32 +25,18 @@
         "mac": "Alt+P"
       },
       "description": "Open ZAIan Studio suggestions"
+    },
+    "improve-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
+      "description": "Review a prompt from selected text"
     }
   },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://chat.openai.com/*",
-        "https://chatgpt.com/*",
-        "https://claude.ai/*",
-        "https://copilot.microsoft.com/*",
-        "https://gemini.google.com/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "css": [
-        "content.css"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
-  "icons": {
-    "128": "icon.png"
   },
   "browser_specific_settings": {
     "gecko": {

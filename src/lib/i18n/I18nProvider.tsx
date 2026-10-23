@@ -20,7 +20,8 @@ function readInitialLocale(): Locale {
     .find((p) => p.startsWith(`${COOKIE}=`))
     ?.split("=")[1];
   if (fromCookie && (LOCALES as string[]).includes(fromCookie)) return fromCookie as Locale;
-  const fromStorage = localStorage.getItem(COOKIE);
+  let fromStorage: string | null = null;
+  try { fromStorage = localStorage.getItem(COOKIE); } catch { /* Storage may be blocked; locale still works in memory. */ }
   if (fromStorage && (LOCALES as string[]).includes(fromStorage)) return fromStorage as Locale;
   // Browser language fallback
   const nav = navigator.language || "en";
@@ -40,8 +41,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    document.cookie = `${COOKIE}=${l};path=/;max-age=31536000;SameSite=Lax`;
-    localStorage.setItem(COOKIE, l);
+    try {
+      document.cookie = `${COOKIE}=${l};path=/;max-age=31536000;SameSite=Lax`;
+      localStorage.setItem(COOKIE, l);
+    } catch { /* Locale changes must not depend on persistence permission. */ }
     applyDirection(l);
   }, []);
 
@@ -82,3 +85,4 @@ export function useI18n(): I18nState {
 export function useT() {
   return useI18n().t;
 }
+
