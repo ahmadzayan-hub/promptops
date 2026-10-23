@@ -23,6 +23,7 @@ test('Arabic mobile screenshot regression, edit, undo, stale preview and local p
   await expect(page.getByRole('button', { name: 'انسخ البرومبت' })).toBeDisabled();
   await page.getByRole('button', { name: 'حدّث البرومبت' }).click();
   await expect(page.getByRole('button', { name: 'انسخ البرومبت' })).toBeEnabled();
+  await page.evaluate(() => window.scrollTo(0, 0));
   console.log('SCREENSHOT_MOBILE_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_MOBILE_END');
 });
 
@@ -48,6 +49,7 @@ test('English desktop details, download and honest server error keep draft', asy
   await expect(page.locator('.prompt-workspace').getByRole('alert')).toContainText('could not complete');
   await expect(page.locator('#prompt-result')).toHaveValue(generated);
   await expect(page.locator('#raw')).toHaveValue('Write an email about a delayed delivery');
+  await page.evaluate(() => window.scrollTo(0, 0));
   console.log('SCREENSHOT_DESKTOP_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_DESKTOP_END');
 });
 

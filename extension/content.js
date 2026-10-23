@@ -24,7 +24,7 @@
   if (!original.trim() || original.length > 8000) { showMessage('Select between 1 and 8,000 characters first. / حدد من ١ إلى ٨٠٠٠ حرف أولًا.'); return; }
   let stale = false, applied = false, currentText = original, currentLength = length;
   let internal = false;
-  const invalidated = () => { if (!internal) { stale = true; status.textContent = 'The field changed. Start a new preview. / تغيّر الحقل؛ ابدأ معاينة جديدة.'; replace.disabled = true; undo.disabled = true; } };
+  const invalidated = () => { if (!internal) { const hadActionFocus = root.activeElement === replace || root.activeElement === undo; stale = true; status.textContent = 'The field changed. Start a new preview. / تغيّر الحقل؛ ابدأ معاينة جديدة.'; replace.disabled = true; undo.disabled = true; if (hadActionFocus) cancel.focus(); } };
   // Only an active, visible preview is observed, never typed content.
   target.addEventListener('input', invalidated);
   target.addEventListener('pointerdown', invalidated);
@@ -52,7 +52,7 @@
   }
   function write(text) {
     if (isText && target.maxLength >= 0 && currentLength - currentText.length + text.length > target.maxLength) { status.textContent = ar ? 'النص أطول من الحد المسموح لهذا الحقل. اختصر المعاينة أو استخدم النسخ اليدوي.' : 'The result exceeds this field’s character limit. Shorten the preview or copy manually.'; return false; }
-    if (!matches()) { status.textContent = ar ? 'تغيّر الحقل. أعد تحديد النص وابدأ من جديد.' : 'The field changed. Select the text again and start a new preview.'; replace.disabled = true; undo.disabled = true; return false; }
+    if (!matches()) { status.textContent = ar ? 'تغيّر الحقل. أعد تحديد النص وابدأ من جديد.' : 'The field changed. Select the text again and start a new preview.'; replace.disabled = true; undo.disabled = true; cancel.focus(); return false; }
     internal = true; observer.disconnect();
     {
       const next = value().slice(0, start) + text + value().slice(start + currentText.length);
@@ -68,6 +68,7 @@
     if (!target.isConnected || target.disabled || target.readOnly || sensitive(target) || value().length !== currentLength || value().slice(start, start + text.length) !== text) {
       stale = true; replace.disabled = true; undo.disabled = true;
       status.textContent = ar ? 'المحرر لم يحتفظ بالتغيير. تحقق من الحقل واستخدم النسخ اليدوي.' : 'The editor did not preserve the change. Check the field and use manual copy instead.';
+      cancel.focus();
       return false;
     }
     return true;
@@ -75,11 +76,11 @@
   replace.onclick = event => {
     if (!event.isTrusted) return;
     if (applied || !preview.value.trim()) return;
-    if (write(preview.value)) { applied = true; replace.disabled = true; preview.disabled = true; undo.disabled = false; status.textContent = ar ? 'استُبدل النص المحدد فقط. الإضافة لم تنفّذ أي طلب شبكي.' : 'Only the selected text was replaced. The extension made no network request.'; }
+    if (write(preview.value)) { applied = true; replace.disabled = true; preview.disabled = true; undo.disabled = false; status.textContent = ar ? 'استُبدل النص المحدد فقط. الإضافة لم تنفّذ أي طلب شبكي.' : 'Only the selected text was replaced. The extension made no network request.'; undo.focus(); }
   };
   undo.onclick = event => {
     if (!event.isTrusted) return;
-    if (applied && write(original)) { applied = false; undo.disabled = true; replace.disabled = false; preview.disabled = false; status.textContent = ar ? 'استُعيد النص الأصلي.' : 'Original selection restored.'; }
+    if (applied && write(original)) { applied = false; undo.disabled = true; replace.disabled = false; preview.disabled = false; status.textContent = ar ? 'استُعيد النص الأصلي.' : 'Original selection restored.'; preview.focus(); }
   };
   preview.addEventListener('input', () => { replace.disabled = stale || applied || !preview.value.trim(); });
   chrome.runtime.sendMessage({ type: 'ENHANCE', payload: { raw_prompt: original } }).then(response => {
@@ -105,7 +106,8 @@
       if (e.key === 'Tab') {
         const items = [...panel.querySelectorAll('button:not(:disabled), textarea:not(:disabled), a[href]')];
         const first = items[0], last = items.at(-1);
-        if (e.shiftKey && root.activeElement === first) { e.preventDefault(); last?.focus(); }
+        if (!items.includes(root.activeElement)) { e.preventDefault(); (e.shiftKey ? last : first)?.focus(); }
+        else if (e.shiftKey && root.activeElement === first) { e.preventDefault(); last?.focus(); }
         else if (!e.shiftKey && root.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
     });

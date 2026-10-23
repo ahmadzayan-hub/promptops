@@ -41,8 +41,8 @@ test('local selected-text preview, trusted confirm and undo preserve surrounding
   await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   await expect(page.locator('textarea')).toHaveValue(/before ## Role/);
   expect(await page.locator('textarea').inputValue()).toMatch(/ after$/);
-  // Confirm is disabled; the next enabled control is Undo.
-  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  // Focus moves to Undo rather than being lost when Confirm becomes disabled.
+  await page.keyboard.press('Enter');
   await expect(page.locator('textarea')).toHaveValue('before write an email after');
   expect(requests).toEqual([]);
   await page.keyboard.press('Escape'); await expect(page.locator('#promptops-review')).toHaveCount(0);
@@ -80,7 +80,7 @@ test('undo refuses to overwrite a later edit', async () => {
   await inject(page); await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   await expect(page.locator('textarea')).toHaveValue(/before ## Role/);
   await page.locator('textarea').evaluate((el: HTMLTextAreaElement) => { el.value = 'later edit'; el.dispatchEvent(new Event('input', { bubbles: true })); });
-  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
   await expect(page.locator('textarea')).toHaveValue('later edit');
   await page.keyboard.press('Escape'); await page.close();
 });
@@ -99,7 +99,7 @@ test('controlled editor reverting the input is not treated as an applied change'
   await page.locator('textarea').evaluate(el => el.addEventListener('input', () => { (el as HTMLTextAreaElement).value = 'controlled editor kept this'; }));
   await inject(page); await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
   await expect(page.locator('textarea')).toHaveValue('controlled editor kept this');
-  // Both replacement and undo are disabled; Tab advances to Close, then Enter dismisses.
-  await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+  // Both replacement and undo are disabled; Close receives focus explicitly.
+  await page.keyboard.press('Enter');
   await expect(page.locator('#promptops-review')).toHaveCount(0); await page.close();
 });
