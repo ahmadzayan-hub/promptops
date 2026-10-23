@@ -37,7 +37,7 @@
   const note = document.createElement('p'); note.textContent = ar ? 'قواعد محلية وليست نموذجًا. الإضافة لا ترسل النص، لكن الاستبدال قد يشغّل الحفظ التلقائي المعتاد للموقع.' : 'Local rules, not an AI model. The extension sends no text. Replacement may trigger the site’s normal autosave.'; panel.append(note);
   const originalLabel = document.createElement('strong'); originalLabel.textContent = ar ? 'الأصلي' : 'Original'; panel.append(originalLabel);
   const before = document.createElement('pre'); before.textContent = original; panel.append(before);
-  const preview = document.createElement('textarea'); preview.rows = 10; preview.maxLength = 30000; preview.setAttribute('aria-label', ar ? 'معاينة قابلة للتعديل' : 'Editable preview'); panel.append(preview);
+  const preview = document.createElement('textarea'); preview.rows = 10; preview.maxLength = 30000; preview.disabled = true; preview.setAttribute('aria-label', ar ? 'معاينة قابلة للتعديل' : 'Editable preview'); panel.append(preview);
   const status = document.createElement('p'); status.setAttribute('role', 'status'); panel.append(status);
   const row = document.createElement('div'); row.className = 'actions'; panel.append(row);
   const replace = button(ar ? 'وافق واستبدل المحدد' : 'Confirm replacement');
@@ -81,11 +81,11 @@
     if (!event.isTrusted) return;
     if (applied && write(original)) { applied = false; undo.disabled = true; replace.disabled = false; preview.disabled = false; status.textContent = ar ? 'استُعيد النص الأصلي.' : 'Original selection restored.'; }
   };
-  preview.addEventListener('input', () => { replace.disabled = applied || !preview.value.trim(); });
+  preview.addEventListener('input', () => { replace.disabled = stale || applied || !preview.value.trim(); });
   chrome.runtime.sendMessage({ type: 'ENHANCE', payload: { raw_prompt: original } }).then(response => {
-    if (!host.isConnected) return;
+    if (!host.isConnected || stale) return;
     if (!response?.ok || typeof response.data?.final_prompt !== 'string') { status.textContent = 'Could not compose this selection.'; return; }
-    preview.value = response.data.final_prompt; replace.disabled = false; preview.focus();
+    preview.value = response.data.final_prompt; preview.disabled = false; replace.disabled = false; preview.focus();
   }).catch(() => { status.textContent = 'Extension unavailable. Close and try again.'; });
   // Keep the canonical app link available without sending any selected text.
   const link = document.createElement('a'); link.href = STUDIO_URL; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = 'PromptOps Studio'; panel.append(link);
