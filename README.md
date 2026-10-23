@@ -1,100 +1,140 @@
+<img src="public/icon.svg" alt="Existing prompt-workspace mark" width="76" height="76">
+
 # PromptOps · ZAIan Studio
 
-> **ZAIan Studio is PromptOps.** One product, two names: PromptOps is the
-> platform, ZAIan Studio is the name its browser, desktop and mobile clients
-> ship under.
+**Give a rough idea the structure it needs to become a reusable prompt.**
 
-## Product Authority
+PromptOps guides builders through intent, missing context, clarifying questions
+and model-specific formatting, while retaining sessions and prompt versions.
+ZAIan Studio is the name used by its browser, desktop and mobile client packages.
 
-| | |
-|---|---|
-| **Primary User** | Builders shipping AI features (this portfolio first) |
-| **Job To Be Done** | Manage prompts as governed, versioned, testable release artifacts |
-| **System of Record** | Prompt · Version · Model config · Template · Release · Rollback |
-| **System of Intelligence** | Model comparison, cost/latency insight, improvement suggestions |
-| **Explicit Non-Goals** | Evaluation verdicts (→ AI Assurance Lab / 44) · agent runtime (→ Agentic OS Enterprise) · being a feature inside Maktab |
+Next.js 15 · React 18 · TypeScript · Supabase · Ollama
 
-> Prompt Lifecycle & Model Optimization Platform — not "make my prompt better".
+[Capabilities](#what-it-helps-you-do) · [Setup](#local-setup) ·
+[Clients](#browser-desktop-and-mobile) · [Verification](#verify-changes) ·
+[العربية](#بالعربية)
 
-The lifecycle this platform owns:
+## What it helps you do
 
+| Your task | Repository capability | Important boundary |
+| --- | --- | --- |
+| Clarify an incomplete request | Intent detection, gap analysis and questions | A model suggestion is not an evaluation verdict |
+| Build a useful prompt | Answer-driven reconstruction and target-model formatting | Quality depends on real context and a configured inference service |
+| Reuse good work | Templates, session history and stored prompt versions | Approval, production release and rollback states are not yet implemented |
+| Work from familiar tools | Web studio, MV3 extension and desktop/client packages | Packaged clients need the correct API endpoint and separate release validation |
+| Separate team data | Supabase organizations and row-level policies | Hosted identity and the actual database policies require acceptance testing |
+
+**Idea → Intent → Missing context → Answers → Formatted prompt → Saved version**
+
+## Current status
+
+The canonical source is [`ahmadzayan-hub/promptops`](https://github.com/ahmadzayan-hub/promptops),
+branch `main`. The studio is at `/studio`.
+
+The 23 October 2026 integrated source, `0e521daf0d002d6eba7ed374ef44d4f63d281c82`,
+passed [quality CI](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398072)
+and [isolated tenant/concurrency checks](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398035).
+This does not establish a current authenticated, durable production installation.
+
+The broader governed prompt lifecycle is the product direction, not a completed
+feature claim. Current session states cover intake, clarification, readiness
+and finalization. Approval, benchmark/A-B workflows, release stages, rollback
+and portfolio assurance integration remain separate work.
+
+**Hosting note:** `vercel.json` currently sets `NEXT_PUBLIC_DEMO_MODE=true`.
+A deployed preview therefore must not be presented as the full connected app.
+Do not simply disable it before verifying the real backend and inference path.
+
+## Local setup
+
+Quality CI uses Node.js 22 and the committed lockfile.
+
+```bash
+git clone https://github.com/ahmadzayan-hub/promptops.git
+cd promptops
+npm ci
+cp .env.example .env.local
 ```
-Draft → Test → Compare Models → Evaluate (via AI Assurance Lab)
-      → Approve → Version → Deploy → Monitor → Improve
-```
 
-A candidate never reaches production on its own:
+Configure a dedicated development Supabase project and a reachable Ollama
+service before starting the authenticated workflow. The prompt orchestration
+code calls `src/lib/llm/ollama.ts`; unrelated provider keys in `.env.example`
+do not configure that service.
 
-```
-PromptOps ── candidate prompt v17 ──► AI Assurance Lab
-                                        ├── PASS ──► production
-                                        └── FAIL ──► back to PromptOps
-```
-
-## What is here
-
-| Path | What it is |
+| Configuration | Purpose |
 | --- | --- |
-| `src/app/studio` | The pipeline on one screen: intent → gap analysis → clarifying questions → a versioned, model-formatted prompt |
-| `src/app/templates`, `src/app/history` | Reusable prompt skeletons; your 50 most recent sessions |
-| `src/app/api/sessions/*` | `POST` to start, `/answers` to reply, `/finalize` to build |
-| `src/app/api/extension/enhance` | The same pipeline for the clients, authenticated by API key |
-| `src/lib/services/*` | `orchestration` (intent), `clarification` (gaps + questions), `formatter` (per-model shaping), `template` |
-| `src/lib/ai-models.ts` | ~30 models with the prompt style each favours, and `toTargetModel()` narrowing them to the five the API accepts |
-| `extension/` | Browser extension (MV3) — polish prompts inside ChatGPT/Claude/Copilot/Gemini |
-| `desktop/` · `mobile/` | Electron shell · Capacitor scaffold |
-| `supabase/migrations/0001_init.sql` | organizations · templates · sessions · questions · answers · prompt_versions · api_keys |
+| `NEXT_PUBLIC_SUPABASE_URL` | Intended Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public client key accepted by `src/lib/env.ts` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only privileged operations, where required |
+| `OLLAMA_BASE_URL` | Inference endpoint reachable by the application server |
+| `OLLAMA_MODEL_REASONING`, `OLLAMA_MODEL_FAST`, `OLLAMA_MODEL_REWRITE` | Installed models selected for each pipeline stage |
+| `NEXT_PUBLIC_APP_URL` | This installation’s origin |
+| `EXTENSION_API_KEY` | Existing extension access configuration; never use a shared sample key in production |
 
-## Releasing the clients
+Review the [tenant migration checklist](docs/tenant-enrollment-release-review.md)
+before applying schema changes. Do not replay a single old migration over a
+live database or assume credentials prove correct tenant policies.
 
-The desktop, extension and mobile clients each bake in a fallback URL, so a
-correction to it only reaches people who install a new build. Until 2026-08-25
-all three pointed at another product's deployment.
+```bash
+npm run dev
+```
 
-`.github/workflows/release-clients.yml` builds them. It is manual by default —
-releasing is a decision, not something a push should do — and also runs on a
-`client-v*` tag, which additionally publishes a GitHub Release.
+Open **http://localhost:3000/studio**. For hosted operation, `localhost:11434`
+refers to the host itself, not your laptop. Use only an approved inference
+deployment with suitable access controls; do not expose an unprotected model
+service to the public internet. Infrastructure and inference costs depend on
+the selected services and are not guaranteed to be zero.
 
-| Client | Built by CI | Notes |
-|---|---|---|
-| `extension/` | yes — zipped for the Chrome Web Store | MV3, no build step; the store still needs the upload done by hand |
-| `desktop/` | yes — AppImage, .deb, .exe | macOS is deliberately omitted: an unsigned `.dmg` refuses to open, and notarising needs an Apple Developer certificate this workflow has no access to |
-| `mobile/` | **no** | Capacitor with no committed native project. `npm run android:init` generates `android/` locally; until that is committed or generated in the workflow there is nothing to build |
+## Browser, desktop and mobile
 
-`scripts/check-client-endpoints.mjs` asserts every client defaults to this
-app's deployment and mentions no other product's host. CI runs it on every
-push, and the release workflow gates on it before building anything — a client
-pointing at the wrong host builds and runs perfectly, it just opens somebody
-else's app.
+- `extension/`: Chrome Manifest V3 source. The release workflow packages a ZIP;
+  store submission is a separate step.
+- `desktop/`: Electron packaging for Linux and Windows. The existing workflow
+  does not produce a signed/notarized macOS release.
+- `mobile/`: Capacitor scaffold. Native project generation, signing and device
+  acceptance remain separate; it is not a published mobile app.
 
-### A note on this repository's history
+The [client release workflow](.github/workflows/release-clients.yml) runs manually
+or on `client-v*` tags. A matching tag publishes a release; do not create one as
+a casual test. `scripts/check-client-endpoints.mjs` checks the configured client
+destinations, but does not prove the destination backend is healthy.
 
-Until 2026-08-25 this repo also contained a second, unrelated application —
-an MBA study platform — grafted on top of the PromptOps code: its own schema
-(`0003_tweenz_schema.sql`), its own routes, and the branding on every shared
-surface. The PromptOps backend was complete and tested underneath it, but no
-UI called it, and the clients in `desktop/`, `extension/` and `mobile/` all
-pointed at that other app's deployment.
+## Verify changes
 
-That graft has been removed and the UI those APIs were waiting for is built.
-Anything in the git history before that date will show the two products
-interleaved.
+```bash
+node scripts/check-client-endpoints.mjs
+npm run typecheck
+npm run lint
+npm test
+npm run build
+python3 scripts/test-tenant-rls.py --pg-bin /path/to/postgresql/bin --full-chain --concurrent
+```
 
-## Roadmap (P0 → P2)
+The PostgreSQL command needs an approved disposable local database environment.
+Never point it at production. Real sign-in, tenant isolation through hosted JWTs,
+session save/reload and provider failure handling need separate acceptance tests.
 
-- ~~**P0 · Identity**~~ — **done.** Every surface is PromptOps: the app, the
-  manifest, the service worker, the sitemap, and the clients, which now point
-  at this deployment instead of another product's.
-- **P0b · Lifecycle states** — wire Draft→…→Improve as first-class states on a
-  prompt. `sessions.status` covers intake → clarifying → ready → finalized
-  today; approval, release and rollback are not modelled yet.
-- **P1 · Platform** — benchmark datasets · A/B tests · cost/latency
-  comparison · model adapters · prompt registry · release stages ·
-  rollback · API/SDK · extension sync.
-- **P2 · Portfolio integration** — production prompts of every portfolio
-  product managed here, routed through the AI Gateway, evaluated by the
-  Assurance Lab.
+## Documentation and source map
 
-## KPIs
+- `src/app/studio/`, `src/app/templates/`, `src/app/history/`: user workflows
+- `src/app/api/sessions/`: session intake, answers and finalization
+- `src/lib/services/`: orchestration, clarification, formatting and templates
+- `supabase/`: schema, tenant policies and regression fixtures
+- [API](docs/API.md), [desktop](docs/DESKTOP.md) and [mobile](docs/MOBILE.md) guides
+- [Tenant release review](docs/tenant-enrollment-release-review.md)
+- [Repository guide](docs/REPOSITORY_GUIDE.md): setup caveats, contribution checks and release boundaries
 
-`prompt success rate` · `cost` · `latency` · `regression rate`
+## بالعربية
+
+**PromptOps** يحوّل الفكرة الأولية إلى طلب أوضح للنموذج عبر فهم الهدف وطرح أسئلة
+واستكمال السياق وحفظ النسخ. **ZAIan Studio** هو اسم حزم العملاء المرتبطة به.
+
+النسخة الكاملة تحتاج تسجيل دخول وقاعدة بيانات وخدمة استدلال حقيقية ومختبرة.
+العرض التجريبي لا يحقق ذلك، كما أن اعتماد الطلبات وإطلاقها والتراجع عنها ليست
+دورة مكتملة في التطبيق الحالي. تبقى هذه الحدود واضحة بدل تقديم وعود غير منفذة.
+
+## License and contributions
+
+No repository-wide license file is present in the reviewed source. This README
+does not grant or change a license. Preserve existing notices, assets and client
+packages. Keep changes reviewable and do not publish keys or private prompts.
