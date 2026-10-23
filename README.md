@@ -38,10 +38,12 @@ Next.js 15 · React 18 · TypeScript · Supabase · Ollama / optional Groq
 The canonical source is [`ahmadzayan-hub/promptops`](https://github.com/ahmadzayan-hub/promptops),
 branch `main`. The studio is at `/studio`.
 
-The 23 October 2026 integrated source, `0e521daf0d002d6eba7ed374ef44d4f63d281c82`,
+The historical 23 October 2026 tenant/integration snapshot, `0e521daf0d002d6eba7ed374ef44d4f63d281c82`,
 passed [quality CI](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398072)
 and [isolated tenant/concurrency checks](https://github.com/ahmadzayan-hub/promptops/actions/runs/40004398035).
-This does not establish a current authenticated, durable production installation.
+Those historical checks do not validate the latest LLM-first changes. Check the
+exact current PR/head CI separately; neither mocked tests nor a successful build
+establish live provider acceptance or a durable production installation.
 
 The broader governed prompt lifecycle is the product direction, not a completed
 feature claim. Current session states cover intake, clarification, readiness

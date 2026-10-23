@@ -64,5 +64,5 @@ test('Arabic LLM-first mobile layout retains the exact rough brief and shows exp
 test('switching modes preserves an edited local draft without a network request', async ({ page }) => {
   await mock(page); await page.goto('/studio'); await page.locator('#ai-raw').fill('Keep my idea');
   await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await page.getByRole('button', { name: 'Build my prompt', exact: true }).click(); await page.locator('#prompt-result').fill('My local edits');
-  await page.getByRole('button', { name: 'AI · understand, draft, review' }).click(); await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await expect(page.locator('#prompt-result')).toHaveValue('My local edits');
+  await page.getByRole('button', { name: 'AI · understand, draft, review' }).click(); await expect(page.locator('#main')).toHaveCount(1); await expect(page.locator('#main')).toBeVisible(); await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await expect(page.locator('#main')).toHaveCount(1); await expect(page.locator('#prompt-result')).toHaveValue('My local edits');
 });

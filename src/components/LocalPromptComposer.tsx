@@ -23,7 +23,7 @@ const copy = {
 };
 const purposes: Purpose[] = ["auto", "general", "writing", "coding", "research", "planning", "image"];
 
-export default function LocalPromptComposer({ initialRaw = "" }: { initialRaw?: string }) {
+export default function LocalPromptComposer({ initialRaw = "", mainId = "main" }: { initialRaw?: string; mainId?: string }) {
   const { locale } = useI18n();
   const ar = locale === "ar";
   const t = ar ? copy.ar : copy.en;
@@ -75,7 +75,7 @@ export default function LocalPromptComposer({ initialRaw = "" }: { initialRaw?: 
     const a = document.createElement("a"); a.href = url; a.download = "promptops-prompt.txt"; a.click(); URL.revokeObjectURL(url);
   };
   const setDetail = (key: keyof typeof details, value: string) => setDetails(d => ({ ...d, [key]: value }));
-  return <main id="main" className="prompt-workspace" dir={ar ? "rtl" : "ltr"}>
+  return <main id={mainId} className="prompt-workspace" dir={ar ? "rtl" : "ltr"}>
     <header className="prompt-intro">
       <div><p className="prompt-eyebrow"><span />{t.eyebrow}</p><h1>{t.title}</h1><p className="prompt-subtitle">{t.subtitle}</p></div>
       <aside className="prompt-engine"><Image className="prompt-brand-art" src="/promptops-brand-3d.webp" width={56} height={55} alt="" aria-hidden="true" loading="lazy" unoptimized /><div><strong>{t.local}</strong><p>{t.localNote}</p></div></aside>
