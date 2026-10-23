@@ -23,7 +23,7 @@ test('Arabic mobile screenshot regression, edit, undo, stale preview and local p
   await expect(page.getByRole('button', { name: 'انسخ البرومبت' })).toBeDisabled();
   await page.getByRole('button', { name: 'حدّث البرومبت' }).click();
   await expect(page.getByRole('button', { name: 'انسخ البرومبت' })).toBeEnabled();
-  console.log('SCREENSHOT_MOBILE_START' + (await page.screenshot()).toString('base64') + 'SCREENSHOT_MOBILE_END');
+  console.log('SCREENSHOT_MOBILE_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_MOBILE_END');
 });
 
 test('English desktop details, download and honest server error keep draft', async ({ page }) => {
@@ -45,10 +45,10 @@ test('English desktop details, download and honest server error keep draft', asy
   await page.route('**/api/sessions', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ unavailable: true, reason: 'backend_not_configured' }) }));
   await page.getByText('Use my connected workspace', { exact: true }).click();
   await page.getByRole('button', { name: 'Send & refine with Ollama' }).click();
-  await expect(page.getByRole('alert')).toContainText('could not complete');
+  await expect(page.locator('.prompt-workspace').getByRole('alert')).toContainText('could not complete');
   await expect(page.locator('#prompt-result')).toHaveValue(generated);
   await expect(page.locator('#raw')).toHaveValue('Write an email about a delayed delivery');
-  console.log('SCREENSHOT_DESKTOP_START' + (await page.screenshot()).toString('base64') + 'SCREENSHOT_DESKTOP_END');
+  console.log('SCREENSHOT_DESKTOP_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_DESKTOP_END');
 });
 
 test('cancelled server request and changed brief cannot overwrite newer local result', async ({ page }) => {
@@ -75,7 +75,7 @@ test('copy denial is actionable and never clears the prompt', async ({ page }) =
   await page.locator('#raw').fill('hello');
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Clipboard');
+  await expect(page.locator('.prompt-workspace').getByRole('alert')).toContainText('Clipboard');
   await expect(page.locator('#prompt-result')).toHaveValue(/hello/);
 });
 
