@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { ModelError, providerHttpError, transportError } from "./errors";
 
 export interface OllamaOptions {
   model?: string;
@@ -6,6 +7,7 @@ export interface OllamaOptions {
   temperature?: number;
   format?: "json";
   signal?: AbortSignal;
+  maxTokens?: number;
 }
 
 interface OllamaResponse {
@@ -15,7 +17,7 @@ interface OllamaResponse {
 
 /**
  * Single-shot generate against a local Ollama daemon.
- * Free, offline, no API keys required.
+ * Self-hosted inference. Hardware, hosting and model-license requirements apply.
  */
 export class LlmUnreachableError extends Error {
   readonly code = "llm_unreachable";
@@ -32,27 +34,30 @@ export async function generate(prompt: string, opts: OllamaOptions = {}): Promis
     system: opts.system,
     stream: false,
     format: opts.format,
-    options: { temperature: opts.temperature ?? 0.2 }
+    options: { temperature: opts.temperature ?? 0.2, ...(opts.maxTokens ? { num_predict: opts.maxTokens } : {}) }
   };
 
+  const signal = opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000);
   let res: Response;
   try {
     res = await fetch(`${env.ollamaBaseUrl}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000)
+      signal
     });
   } catch (e) {
     // Network-level failure (refused, DNS, timeout) · surface a clean error
+    if (signal.aborted) throw transportError(signal);
     throw new LlmUnreachableError(env.ollamaBaseUrl, e);
   }
 
   if (!res.ok) {
-    throw new Error(`Ollama error ${res.status}: ${await res.text()}`);
+    throw providerHttpError(res.status, res.headers.get("retry-after"));
   }
-  const data = (await res.json()) as OllamaResponse;
-  if (typeof data?.response !== "string" || !data.response.trim()) throw new Error("ollama_invalid_response");
+  let data: OllamaResponse;
+  try { data = await res.json(); } catch { if (signal.aborted) throw transportError(signal); throw new ModelError("invalid_model_response", 502); }
+  if (typeof data?.response !== "string" || !data.response.trim() || data.done !== true || (data as { done_reason?: string }).done_reason === "length") throw new ModelError("invalid_model_response", 502);
   return data.response.trim();
 }
 

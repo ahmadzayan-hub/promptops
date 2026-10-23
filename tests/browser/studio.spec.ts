@@ -8,6 +8,7 @@ test('Arabic mobile screenshot regression, edit, undo, stale preview and local p
   page.on('pageerror', e => errors.push(e.message));
   page.on('request', r => { if (r.method() === 'POST') transmissions.push(r.url()); });
   await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.locator('#raw').fill(raw);
   await page.getByRole('button', { name: 'صِغ البرومبت', exact: true }).click();
@@ -30,6 +31,7 @@ test('Arabic mobile screenshot regression, edit, undo, stale preview and local p
 test('English desktop details, download and honest server error keep draft', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click();
   await page.locator('#raw').fill('Write an email about a delayed delivery');
   await page.getByText('Add details · optional', { exact: true }).click();
   await page.locator('#context').fill('The delivery is delayed. No new date is known.');
@@ -55,6 +57,7 @@ test('English desktop details, download and honest server error keep draft', asy
 
 test('cancelled server request and changed brief cannot overwrite newer local result', async ({ page }) => {
   await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click();
   await page.locator('#raw').fill('Plan a project');
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await page.route('**/api/sessions', async route => {
@@ -74,6 +77,7 @@ test('cancelled server request and changed brief cannot overwrite newer local re
 test('copy denial is actionable and never clears the prompt', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('blocked')) } }));
   await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click();
   await page.locator('#raw').fill('hello');
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
@@ -84,13 +88,15 @@ test('copy denial is actionable and never clears the prompt', async ({ page }) =
 test('compiler remains usable with blocked preference storage', async ({ page }) => {
   await page.addInitScript(() => { Storage.prototype.getItem = () => { throw new Error('storage blocked'); }; Storage.prototype.setItem = () => { throw new Error('storage blocked'); }; });
   await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click();
   await page.locator('#raw').fill('hello');
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await expect(page.locator('#prompt-result')).toHaveValue(/hello/);
 });
 
 test('manual changes to a saved server version are labelled unsynced', async ({ page }) => {
-  await page.goto('/studio'); await page.locator('#raw').fill('write an email');
+  await page.goto('/studio');
+  await page.locator('.prompt-mode button').nth(1).click(); await page.locator('#raw').fill('write an email');
   await page.getByRole('button', { name: 'Build my prompt', exact: true }).click();
   await page.route('**/api/sessions', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ session: { id: 'fixture', prompt_versions: [{ version: 1, final_prompt: 'Model output for review' }] } }) }));
   await page.getByText('Use my connected workspace', { exact: true }).click(); await page.getByRole('button', { name: 'Send & refine with Ollama' }).click();
