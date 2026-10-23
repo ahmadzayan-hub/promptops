@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { analysisSchema, composeResultSchema, type ComposeRequest } from "./compose-contract";
-export const availabilitySchema = z.object({ provider: z.enum(["ollama", "groq", "unconfigured"]), model: z.string().optional(), configured: z.boolean(), verified: z.literal(false), workspaceConfigured: z.boolean() });
+export const availabilitySchema = z.object({ provider: z.enum(["ollama", "groq", "unconfigured"]), model: z.string().optional(), configured: z.boolean(), verified: z.literal(false), workspaceConfigured: z.boolean(), reason: z.string().optional() });
 export type Availability = z.infer<typeof availabilitySchema>;
 export class ComposeClientError extends Error {
   constructor(readonly code: string, readonly uncertain = false, readonly retryAfter = 0) { super(code); }

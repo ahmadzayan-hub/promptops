@@ -22,6 +22,7 @@ test('LLM-first explicit transmission, clarification, review and human approval 
   await expect(page.locator('#ai-result')).toHaveValue(/Do not promise a date/); expect(posts).toHaveLength(2);
   await expect(page.getByRole('button', { name: 'Copy reviewed prompt' })).toBeDisabled();
   await page.getByRole('checkbox').last().check(); await expect(page.getByRole('button', { name: 'Copy reviewed prompt' })).toBeEnabled();
+  await page.evaluate(() => window.scrollTo(0, 0)); await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   console.log('SCREENSHOT_LLM_DESKTOP_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_LLM_DESKTOP_END');
   await page.locator('#ai-result').fill('My edit'); await expect(page.getByRole('button', { name: 'Copy reviewed prompt' })).toBeDisabled();
   await expect(page.getByText('Your edits have not been model-reviewed')).toBeVisible();
@@ -30,7 +31,7 @@ test('LLM-first explicit transmission, clarification, review and human approval 
 test('quota exhaustion keeps original, never retries or silently presents a local template as AI', async ({ page }) => {
   await mock(page, true); let posts = 0; page.on('request', r => { if (r.method() === 'POST') posts++; });
   await page.goto('/studio'); await page.locator('#ai-raw').fill('My brief'); await page.getByRole('checkbox').first().check(); await page.getByRole('button', { name: 'Understand my intent' }).click();
-  await expect(page.getByRole('alert')).toContainText('quota'); await expect(page.locator('#ai-raw')).toHaveValue('My brief');
+  await expect(page.locator('.prompt-workspace').getByRole('alert')).toContainText('quota'); await expect(page.locator('#ai-raw')).toHaveValue('My brief');
   await page.waitForTimeout(2300); expect(posts).toBe(1); await expect(page.locator('#ai-result')).toHaveCount(0);
   await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await expect(page.locator('#raw')).toHaveValue('My brief');
 });
@@ -59,4 +60,9 @@ test('Arabic LLM-first mobile layout retains the exact rough brief and shows exp
   await expect(page.getByRole('button', { name: 'افهم قصدي', exact: true })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   console.log('SCREENSHOT_LLM_MOBILE_START' + (await page.screenshot({ fullPage: true })).toString('base64') + 'SCREENSHOT_LLM_MOBILE_END');
+});
+test('switching modes preserves an edited local draft without a network request', async ({ page }) => {
+  await mock(page); await page.goto('/studio'); await page.locator('#ai-raw').fill('Keep my idea');
+  await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await page.getByRole('button', { name: 'Build my prompt', exact: true }).click(); await page.locator('#prompt-result').fill('My local edits');
+  await page.getByRole('button', { name: 'AI · understand, draft, review' }).click(); await page.getByRole('button', { name: 'Local alternative · no LLM' }).click(); await expect(page.locator('#prompt-result')).toHaveValue('My local edits');
 });
