@@ -15,13 +15,12 @@ The lockfile and clean-install CI must be retained together with these overrides
 high/critical production dependency findings. This is a dated registry check,
 not a guarantee that the application or all dependencies are vulnerability-free.
 
-The **full development tree is not clean**: inherited Vitest 2/Vite/Tinypool,
-brace-expansion and Tailwind/PostCSS-selector tooling still have advisories.
-The current Vitest fixes require a separate major test-tool migration. Tests run
-in batch mode on repository-owned fixtures; do not expose a Vitest UI/API or Vite
-development server to untrusted clients. No production or user text is used in
-these fixtures. A dedicated toolchain upgrade should rerun all unit and browser
-tests rather than use `npm audit fix --force`.
+The earlier full development audit found inherited Vitest/Vite/Tinypool,
+brace-expansion and Tailwind/PostCSS-selector advisories. The separately scoped
+24 October toolchain repair below removes the high/critical findings; three
+moderate package entries remain. Tests run in batch mode on repository-owned
+fixtures; do not expose a Vitest UI/API or Vite development server to untrusted
+clients. No production or user text is used in these fixtures.
 
 The production deployment gate is separate. A passing candidate audit does not
 prove the older currently hosted Vercel deployment has these patches.
@@ -77,3 +76,52 @@ audit suppression, publication, or deployment is part of this local repair.
 The production audit must pass again for the exact published commit, along with
 the existing quality and browser checks. The development-tool advisories above
 remain separately scoped; zero production findings is not a whole-app guarantee.
+
+## Development-tool repair, 24 October 2026
+
+This separate repair changes development dependencies only, on top of the merged
+Zod repair. Application dependencies, source, test assertions, scripts, workflows
+and runtime configuration are unchanged. No audit suppression or forced bulk
+upgrade is used.
+
+- Pin **Vitest 4.1.12**, the release containing the [v4 mock-hardening backport](https://github.com/vitest-dev/vitest/releases/tag/v4.1.12).
+  Vitest 3.2.6 fixes the UI advisory but still depends on vulnerable Tinypool 1.x.
+  V4 [removes Tinypool and vite-node](https://v4.vitest.dev/guide/migration), avoiding
+  unsupported transitive-major overrides. Vitest 5 is not needed for this scope.
+- Explicitly pin its compatible development peer **Vite 6.4.4**, rather than let
+  the resolver select a newer major. The [6.4 line still receives security fixes](https://vite.dev/releases);
+  [6.4.4 is the patched release](https://github.com/vitejs/vite/releases/tag/v6.4.4)
+  outside the reviewed Vite ranges. Both tools support the repository's Node 22
+  CI; local validation also uses supported Node 24.
+- Update only the two **brace-expansion** lock records to **1.1.21 / 5.0.12**.
+  These patched versions satisfy their existing minimatch dependency ranges;
+  no ESLint major or override is required. See the [upstream advisory](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr).
+
+### Exposure and verification limits
+
+The original critical [Tinypool worker-option](https://github.com/advisories/GHSA-5gmw-xhrv-c9v3)
+and [run-option](https://github.com/advisories/GHSA-85c8-ppgw-ccpr) gadgets require a
+separate prototype-pollution primitive. No exploit chain was established here.
+The [Vitest UI advisory](https://github.com/advisories/GHSA-5xrq-8626-4rwp) requires
+an exposed API/UI or the described Windows UI/browser conditions, absent from
+the reviewed Ubuntu batch-test configuration. These are nevertheless relevant
+to developer and CI environments, which install and execute this toolchain.
+They were not established as public production request-path vulnerabilities.
+
+A clean install with the scoped lockfile passes all **225 existing tests in
+27 files**, with no test weakening or application-source adaptation. Exact-head
+Node 22 CI must additionally repeat the existing browser/build checks before
+merge. The migration changes mock and worker-pool semantics; this is an explicit
+test-tool major migration, not a claim that v2/v4 are identical.
+
+The candidate's full audit reports **zero high/critical findings** and **three
+moderate package entries**: TailwindCSS, postcss-nested and
+postcss-selector-parser, all rooted in the [selector-parser CPU-exhaustion advisory](https://github.com/advisories/GHSA-rj75-hqrm-r3gf).
+The production-only audit remains zero. The moderate CSS tooling chain remains
+separately scoped rather than forcing a Tailwind major upgrade. Deprecated
+ESLint/Supabase helper packages are also not claimed fully modernized.
+
+No public tooling server, exploit, credential change, workflow permission,
+database change, manual deployment or subscription is part of this repair.
+The hosted application's acceptance and actual deployment commit remain
+separate from these source/dependency checks.
