@@ -2,8 +2,9 @@ import { z } from "zod";
 
 const SessionSchema = z.object({
   id: z.string().min(1),
-  questions: z.array(z.object({ id: z.string(), question: z.string(), position: z.number(), required: z.boolean(), rationale: z.string().nullable().optional() })).default([]),
-  prompt_versions: z.array(z.object({ version: z.number(), final_prompt: z.string().min(1), rationale: z.string().nullable().optional() })).default([]),
+  // Reject oversized legacy responses, rather than walking every nested item.
+  questions: z.array(z.object({ id: z.string(), question: z.string(), position: z.number(), required: z.boolean(), rationale: z.string().nullable().optional() })).max(1000).default([]),
+  prompt_versions: z.array(z.object({ version: z.number(), final_prompt: z.string().min(1), rationale: z.string().nullable().optional() })).max(1000).default([]),
 });
 export type StudioSession = z.infer<typeof SessionSchema>;
 export function parseStudioSession(value: unknown): StudioSession {

@@ -13,6 +13,8 @@ const Body = z.object({
       })
     )
     .min(1)
+    // Zod 4.6.6+ rejects oversized collections before parsing their elements.
+    .max(100)
 });
 
 export const POST = safeRoute(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

@@ -21,7 +21,7 @@ export type Review = z.infer<typeof reviewSchema>;
 const common = { requestId: z.string().uuid(), raw: z.string().min(1).max(8000).refine(s => !!s.trim()), locale: z.enum(["en", "ar"]), consent: z.literal(true), provider: z.enum(["ollama", "groq"]), model: z.string().min(1).max(100) };
 export const composeRequestSchema = z.discriminatedUnion("phase", [
   z.object({ ...common, phase: z.literal("understand") }).strict(),
-  z.object({ ...common, phase: z.literal("draft"), analysis: analysisSchema, answers: z.record(z.string().max(1000)).refine(a => Object.keys(a).length <= 3 && Object.keys(a).every(k => ["q1", "q2", "q3"].includes(k))) }).strict(),
+  z.object({ ...common, phase: z.literal("draft"), analysis: analysisSchema, answers: z.record(z.string(), z.string().max(1000)).refine(a => Object.keys(a).length <= 3 && Object.keys(a).every(k => ["q1", "q2", "q3"].includes(k))) }).strict(),
 ]);
 export type ComposeRequest = z.infer<typeof composeRequestSchema>;
 export const composeResultSchema = z.object({

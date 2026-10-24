@@ -17,6 +17,8 @@ const Body = z.object({
         answer: z.string()
       })
     )
+    // Bound legacy caller-supplied clarifications before element validation.
+    .max(100)
     .optional(),
   // when true → return clarification questions instead of a final prompt
   ask_first: z.boolean().optional()
