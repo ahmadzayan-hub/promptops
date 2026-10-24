@@ -9,7 +9,8 @@ const Body = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(2000).optional(),
   category: z.string().max(60).optional(),
-  body: z.unknown(),
+  // Preserve Zod 3's omitted-body normalization when using Zod 4.
+  body: z.unknown().optional(),
   is_public: z.boolean().optional()
 });
 

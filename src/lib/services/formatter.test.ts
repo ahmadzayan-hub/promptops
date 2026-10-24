@@ -38,3 +38,7 @@ it("returns only validated model output", async () => {
   vi.mocked(generateJson).mockResolvedValueOnce({ final_prompt: "A verified response shape", rationale: "Structured by model" });
   await expect(reconstructPrompt({ rawPrompt: "test", intent: "other", qa: [] })).resolves.toEqual({ final_prompt: "A verified response shape", rationale: "Structured by model" });
 });
+it("preserves trimming and the optional rationale default", async () => {
+  vi.mocked(generateJson).mockResolvedValueOnce({ final_prompt: "  A response  " });
+  await expect(reconstructPrompt({ rawPrompt: "test", intent: "other", qa: [] })).resolves.toEqual({ final_prompt: "A response", rationale: "" });
+});
