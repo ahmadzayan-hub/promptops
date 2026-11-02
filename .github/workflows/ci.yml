@@ -53,6 +53,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Golden rubric scorer regression
+        run: npm run test:eval
+
       - name: Test
         run: npm test
 

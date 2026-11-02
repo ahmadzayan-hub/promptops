@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "eval:prompts": "node scripts/evaluate-prompts.mjs",
+    "test:eval": "node --test scripts/evaluate-prompts.test.mjs",
     "build:composer": "node scripts/build-composer.mjs",
     "check:composer": "node scripts/build-composer.mjs --check",
     "test:browser": "playwright test"
@@ -46,7 +48,7 @@
     "vitest": "4.1.12",
     "vite": "6.4.4"
   },
-  "description": "PromptOps · ZAIan Studio — turn a rough idea into a production prompt, formatted per model and versioned.",
+  "description": "PromptOps Â· ZAIan Studio â€” turn a rough idea into a production prompt, formatted per model and versioned.",
   "overrides": {
     "next": {
       "postcss": "8.5.26"
