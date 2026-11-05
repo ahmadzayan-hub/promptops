@@ -22,6 +22,15 @@ describe("generateJson", () => {
     expect(out).toMatchObject({ intent: "writing", confidence: 0.9 });
   });
 
+  it("keeps legacy JSON mode even when a format option is provided", async () => {
+    const fetch = vi.fn(() => okJson('{"ok":true}'));
+    global.fetch = fetch as never;
+    await generateJson("x", { format: { type: "object", additionalProperties: false } });
+    const init = vi.mocked(global.fetch).mock.calls[0][1];
+    expect(JSON.parse(init!.body as string).format).toBe("json");
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
   it("recovers JSON when wrapped in noise", async () => {
     global.fetch = vi.fn(() => okJson('Sure! Here is your output: {"ok":true} done.')) as never;
     const out = await generateJson<{ ok: boolean }>("x");

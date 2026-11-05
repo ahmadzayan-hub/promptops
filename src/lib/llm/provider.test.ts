@@ -34,3 +34,42 @@ describe('provider failures and bounded calls', () => {
     expect(fetch.mock.calls[0][0]).toBe('https://api.groq.com/openai/v1/chat/completions'); const body = JSON.parse(fetch.mock.calls[0][1].body); expect(body.messages).toHaveLength(2); expect(body.tools).toBeUndefined(); expect(body.model).toBe('openai/gpt-oss-20b');
   });
 });
+
+describe('provider-specific structured output', () => {
+  const schema = { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false };
+  const ollama = { provider: 'ollama' as const, model: 'local-model' };
+  it.each([undefined, schema])('sends an optional schema only as Ollama format (%#)', async outputSchema => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ response: '{"ok":true}', done: true })));
+    vi.stubGlobal('fetch', fetch);
+    const signal = new AbortController().signal;
+    expect(await jsonModel(ollama)('system', { original: 'hello' }, signal, outputSchema)).toEqual({ ok: true });
+    expect(fetch).toHaveBeenCalledOnce();
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toMatch(/\/api\/generate$/);
+    expect(JSON.parse(init.body)).toMatchObject({ model: 'local-model', system: 'system', prompt: '{"original":"hello"}', format: outputSchema ?? 'json', stream: false, options: { num_predict: 3000 } });
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+  it('keeps Groq JSON mode even when the composer supplies a schema', async () => {
+    configure();
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: '{"ok":true}' } }] })));
+    vi.stubGlobal('fetch', fetch);
+    await jsonModel(getModelConfig())('system', {}, new AbortController().signal, schema);
+    const body = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.format).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain('additionalProperties');
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+  it('does not retry or downgrade when Ollama rejects a schema', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response('schema unsupported', { status: 400 }));
+    vi.stubGlobal('fetch', fetch);
+    await expect(jsonModel(ollama)('system', {}, new AbortController().signal, schema)).rejects.toMatchObject({ code: 'provider_unavailable' });
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+  it('does not send a schema request after cancellation', async () => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    const controller = new AbortController(); controller.abort();
+    await expect(jsonModel(ollama)('system', {}, controller.signal, schema)).rejects.toMatchObject({ code: 'request_cancelled' });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});

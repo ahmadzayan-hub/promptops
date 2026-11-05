@@ -2,14 +2,14 @@ import { generate } from "./ollama";
 import { type ModelConfig } from "./config";
 import { ModelError, providerHttpError, transportError } from "./errors";
 
-export type JsonModel = (system: string, data: unknown, signal: AbortSignal) => Promise<unknown>;
+export type JsonModel = (system: string, data: unknown, signal: AbortSignal, outputSchema?: Record<string, unknown>) => Promise<unknown>;
 /** No SDK auto-retries, model switching, tools, web search, or provider fallback. */
 export function jsonModel(config: ModelConfig): JsonModel {
-  return async (system, data, signal) => {
+  return async (system, data, signal, outputSchema) => {
     if (signal.aborted) throw transportError(signal);
     let raw: string;
     if (config.provider === "ollama") {
-      raw = await generate(JSON.stringify(data), { model: config.model, system, format: "json", signal, maxTokens: 3000 });
+      raw = await generate(JSON.stringify(data), { model: config.model, system, format: outputSchema ?? "json", signal, maxTokens: 3000 });
     } else {
       const bounded = AbortSignal.any([signal, AbortSignal.timeout(30000)]);
       let response: Response;
