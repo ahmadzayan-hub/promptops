@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createReviewedDraft, understand } from "./compose-pipeline";
-import type { Analysis, Draft, Review } from "./compose-contract";
+import { analysisSchema, draftSchema, reviewSchema, type Analysis, type Draft, type Review } from "./compose-contract";
+import { z } from "zod";
 const raw = 'Write an email. Do not promise a date. Budget 50 USD.';
 const analysis: Analysis = { intent: 'Write a constrained email', protectedQuotes: ['Write an email.', 'Do not promise a date.', 'Budget 50 USD.'], questions: [] };
 const draft: Draft = { role: 'Careful writer', task: 'Write an email.', context: 'Budget 50 USD.', constraints: 'Do not promise a date.', outputFormat: 'Email', reviewCriteria: 'Check the original facts and constraints', assumptions: [], unresolved: [] };
@@ -65,4 +66,37 @@ it('does not treat client-supplied abbreviated analysis as complete evidence; re
   const result = await createReviewedDraft(raw, 'en', incomplete, {}, model, signal);
   expect(model.mock.calls[1][1].source.original).toBe(raw);
   expect(result.modelReview).toBe('needs_changes');
+});
+
+
+describe('stage output schemas', () => {
+  it('forwards the strict analysis schema and the original cancellation signal', async () => {
+    const model = vi.fn().mockResolvedValue(analysis);
+    await understand(raw, 'en', model, signal);
+    expect(model.mock.calls[0][2]).toBe(signal);
+    const schema = model.mock.calls[0][3];
+    expect(schema).toEqual(z.toJSONSchema(analysisSchema, { target: 'draft-7' }));
+    expect(schema).toMatchObject({ type: 'object', additionalProperties: false, required: ['intent', 'protectedQuotes', 'questions'], properties: {
+      intent: { minLength: 1, maxLength: 2000 },
+      protectedQuotes: { minItems: 1, maxItems: 20 },
+      questions: { maxItems: 3, items: { additionalProperties: false, properties: { id: { enum: ['q1', 'q2', 'q3'] } } } },
+    } });
+  });
+  it('uses draft/review contracts for drafting, review, repair and re-review without extra calls', async () => {
+    const failed = { ...review, meaningPreserved: false };
+    const model = vi.fn().mockResolvedValueOnce(draft).mockResolvedValueOnce(failed).mockResolvedValueOnce(draft).mockResolvedValueOnce(review);
+    await createReviewedDraft(raw, 'en', analysis, {}, model, signal);
+    expect(model).toHaveBeenCalledTimes(4);
+    const draftOutput = z.toJSONSchema(draftSchema, { target: 'draft-7' });
+    const reviewOutput = z.toJSONSchema(reviewSchema, { target: 'draft-7' });
+    expect(model.mock.calls.map(call => call[3])).toEqual([draftOutput, reviewOutput, draftOutput, reviewOutput]);
+    expect(model.mock.calls.every(call => call[2] === signal)).toBe(true);
+    expect(draftOutput).toMatchObject({ additionalProperties: false, properties: { context: { maxLength: 4000 }, assumptions: { maxItems: 10 } } });
+    expect(reviewOutput).toMatchObject({ additionalProperties: false, properties: { meaningPreserved: { type: 'boolean' }, coverage: { maxItems: 24, items: { additionalProperties: false } }, issues: { maxItems: 20 } } });
+  });
+  it('still rejects extra model fields locally rather than trusting schema-constrained generation', async () => {
+    const model = vi.fn().mockResolvedValue({ ...analysis, approved: true });
+    await expect(understand(raw, 'en', model, signal)).rejects.toMatchObject({ code: 'invalid_model_response' });
+    expect(model).toHaveBeenCalledOnce();
+  });
 });

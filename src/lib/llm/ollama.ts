@@ -5,7 +5,7 @@ export interface OllamaOptions {
   model?: string;
   system?: string;
   temperature?: number;
-  format?: "json";
+  format?: "json" | Record<string, unknown>;
   signal?: AbortSignal;
   maxTokens?: number;
 }
